@@ -1,0 +1,36 @@
+name: Validate CMO OS
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: tradelink
+          POSTGRES_PASSWORD: local-development-only
+          POSTGRES_DB: tradelink_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U tradelink -d tradelink_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://tradelink:local-development-only@localhost:5432/tradelink_unused
+      TEST_DATABASE_URL: postgresql://tradelink:local-development-only@localhost:5432/tradelink_test
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run db:generate
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:prepare
+      - run: npm run test:integration
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: npm run build

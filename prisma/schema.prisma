@@ -1,0 +1,175 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         String    @default("ADMIN")
+  sessions     Session[]
+  createdAt    DateTime  @default(now())
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
+}
+
+model Company {
+  id            String   @id @default("tradelink")
+  name          String   @default("TradeLink")
+  description   String
+  goalStart     Int      @default(50)
+  goalTarget    Int      @default(5000)
+  goalStartDate DateTime @db.Date
+  goalEndDate   DateTime @db.Date
+  currency      String   @default("USD")
+  updatedAt     DateTime @updatedAt
+}
+
+model DailyMetric {
+  id          String   @id @default(cuid())
+  date        DateTime @unique @db.Date
+  subscribers Int
+  newSubs     Int
+  churned     Int
+  visitors    Int      @default(0)
+  mrr         Decimal  @db.Decimal(12, 2)
+  spend       Decimal  @db.Decimal(12, 2)
+  source      String   @default("manual")
+  isDemo      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Channel {
+  id      String          @id @default(cuid())
+  name    String          @unique
+  metrics ChannelMetric[]
+}
+
+model ChannelMetric {
+  id          String   @id @default(cuid())
+  date        DateTime @db.Date
+  channelId   String
+  channel     Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  visitors    Int
+  leads       Int
+  subscribers Int
+  spend       Decimal  @db.Decimal(12, 2)
+  isDemo      Boolean  @default(false)
+
+  @@unique([channelId, date])
+}
+
+model Experiment {
+  id            String   @id @default(cuid())
+  title         String
+  hypothesis    String
+  channel       String
+  owner         String
+  status        String   @default("BACKLOG")
+  impact        Int
+  confidence    Int
+  ease          Int
+  successMetric String
+  result        String   @default("")
+  isDemo        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Knowledge {
+  id        String   @id @default(cuid())
+  title     String
+  category  String
+  content   String
+  isDemo    Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+model Memory {
+  id        String   @id @default(cuid())
+  title     String
+  kind      String
+  content   String
+  isDemo    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Approval {
+  id          String    @id @default(cuid())
+  title       String
+  actionType  String
+  details     String
+  status      String    @default("PENDING")
+  requestedBy String
+  reviewedBy  String?
+  reviewNote  String?
+  reviewedAt  DateTime?
+  isDemo      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actor      String
+  action     String
+  entityType String
+  entityId   String
+  details    String
+  createdAt  DateTime @default(now())
+}
+
+model Alert {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  title        String
+  severity     String
+  detail       String
+  acknowledged Boolean  @default(false)
+  isDemo       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  type      String
+  title     String
+  content   String
+  provider  String
+  isDemo    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  role      String
+  content   String
+  provider  String   @default("manual")
+  userId    String
+  isDemo    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
