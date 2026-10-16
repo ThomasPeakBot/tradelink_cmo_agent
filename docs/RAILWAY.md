@@ -42,3 +42,13 @@ The local Docker dependency install initially failed because the stock image did
 The container copies source files with ownership suitable for the unprivileged Node runtime and grants that runtime access to the generated Next.js cache. Production npm uses a separate writable temporary cache. No account credentials are baked into the image.
 
 The integrated `start:production` entrypoint was also verified against the empty disposable database on an unused local port: migration detection, existing-admin preservation, HTTP health, Secure-cookie authentication, and `NO DATA` pace behavior all succeeded.
+
+## Recheck after environment settings were applied
+
+The Railway API now returns HTTP 200 and the Docker image build completes. The running cloud machine still has no injected `RAILWAY_API_TOKEN`; the saved personal token requirement has no credential binding. Native `railway whoami` returned Unauthorized.
+
+The machine's home directory is physically read-only even after a scoped filesystem write grant, so the official CLI's normal `~/.railway` credential storage cannot be used. Browserless OAuth is instead started in a temporary Node container with a private, writable credential volume at `/workspace/railway-deployment-access` (outside the application checkout). The official CLI binary remains checksum-verified. Proxy routing and the platform CA bundle are passed through without disabling TLS verification. The account owner must approve Railway's device sign-in; do not assume the approval happened merely because the URL was issued.
+
+The image `tradelink-cmo:railway` built successfully with OpenSSL and the optional build-only platform CA bundle. Its unprivileged runtime was exercised against a fresh disposable PostgreSQL database: startup migration, administrator bootstrap, health, secure-cookie login, authenticated workspace, local-evidence Daily Growth Brief persistence and logout all passed. No API credentials or remote Railway resources were needed for these local checks.
+
+Remote deployment remains pending Railway authentication. No public login URL is claimed until actual Railway service deployment and HTTPS verification succeed.

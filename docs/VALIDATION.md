@@ -19,3 +19,7 @@ OpenAI provider behavior is tested with mocked HTTP completions and errors. No l
 Docker/Railway configuration and CI are checked in. No Docker application image or remote Railway deployment was executed. Cloud install/start instructions were saved to the configuration draft; saving a draft is separate from publishing a cloud environment snapshot or deploying the application.
 
 The earlier full TradeLink business specification was unavailable. The supplied V1 requirements were implemented, and unknown company information is explicitly labeled as demo assumptions in editable knowledge records.
+
+## Deployment preparation follow-up
+
+After network settings were applied, the Railway-compatible Docker image built successfully and passed an end-to-end local container smoke check with fresh PostgreSQL: migrations, first-boot administrator, health, authentication, workspace access, persisted local-evidence briefing and session revocation. Production bootstrap unit coverage increased the unit total to 34. A repeated first-boot check preserved credentials and data. No checksum or TLS verification was disabled. Remote Railway authentication and deployment are separate and remain pending the account owner's sign-in.
