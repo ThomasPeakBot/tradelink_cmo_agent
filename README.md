@@ -93,16 +93,16 @@ npm run test:e2e
 
 If Chromium is preinstalled, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium`. The browser suite starts its own app on port 3001, with a separate `.next-e2e` output and the test database, and stops it afterwards. `test:prepare` resets application tables in the designated disposable test database before reseeding; do not store valuable data there. Never point tests at production. Unit tests cover growth math, forecasts, scoring, validation, CSV, password hashing and provider boundaries. Integration tests exercise PostgreSQL persistence and context grounding. Browser/API tests cover authentication, navigation/mobile layout, data mutations, CSV atomicity, approval boundaries, CMO context and all report cadences. CI performs the same checks without deploying.
 
-## Railway-compatible, not deployed
+## Railway deployment
 
 `Dockerfile` and `railway.toml` prepare a Railway-compatible build and database health check. No deployment has been performed.
 
-When deployment is explicitly authorized:
+Deployment is now authorized for this task; execution still requires Railway account access. See [Railway runbook](docs/RAILWAY.md).
 
 1. Provision a PostgreSQL service and bind its `DATABASE_URL` to the app. Use a fresh database for real operation.
-2. Set `APP_URL` to the exact HTTPS application origin. Optionally configure `OPENAI_API_KEY` and `OPENAI_MODEL` securely.
-3. Build the Dockerfile; startup runs the migration runner and `next start`, honoring Railway's `PORT`.
-4. Create the internal admin using `NODE_ENV=production`, unique `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and `npm run db:seed`. This seeds **labeled demo records**; remove them intentionally through an approved data migration or replace observations and knowledge before real business use. Do not seed a real production workspace with demo data unless intended.
+2. Set `APP_URL` to the exact HTTPS application origin, `ADMIN_EMAIL` to your chosen login, and `ADMIN_PASSWORD` to a unique 16–256 character password in Railway service variables. Never reuse the public demo password. Optionally configure OpenAI securely.
+3. Build the Dockerfile; `npm run start:production` applies migrations, bootstraps a fresh workspace, and starts Next.js, honoring Railway's `PORT`.
+4. First boot defaults to an empty production workspace with the 50 → 5,000 goal and administrator. Set `BOOTSTRAP_MODE=demo` explicitly before first boot to populate labeled demo observations instead. Existing company records and administrator credentials are preserved on restart; use `npm run admin:password` for an intentional credential rotation.
 5. Verify `/api/health`, authenticated dashboard and a representative briefing. Add database backups, access restrictions, monitoring and SSO before broader use.
 
 Secrets belong in environment settings, never committed files. `OPENAI_API_KEY` is optional. Future recommended connections: billing/subscriber source of truth (e.g. Stripe), product/web analytics (e.g. PostHog or GA4), CRM, and approved channel reporting. Build read-only adapters and reconcile attribution first.

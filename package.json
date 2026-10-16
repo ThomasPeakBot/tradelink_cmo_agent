@@ -18,7 +18,9 @@
     "setup:local": "bash scripts/setup-local.sh",
     "test:prepare": "tsx scripts/prepare-tests.ts",
     "format": "prettier --write .",
-    "admin:password": "tsx scripts/admin-password.ts"
+    "admin:password": "tsx scripts/admin-password.ts",
+    "db:bootstrap": "tsx scripts/bootstrap.ts",
+    "start:production": "sh scripts/start-production.sh"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",
