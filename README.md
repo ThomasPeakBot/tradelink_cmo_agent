@@ -116,3 +116,7 @@ This is a single-company internal workspace, not multi-tenant SaaS. There is no 
 ## Dependency review
 
 The production dependency audit reports zero known vulnerabilities at implementation time. The full development audit retains an upstream `braces` / `micromatch` / `fast-glob` stack-exhaustion advisory through Next.js lint tooling, with no compatible upstream fix available. These packages process repository glob patterns during linting; they are not part of request handling. Vitest and runtime dependencies were updated to patched releases. Recheck advisories as dependencies evolve.
+
+## Appearance
+
+Use the **Dark mode / Light mode** button in the workspace header or login page. The first visit follows your device theme; selecting a mode saves it in this browser and keeps it across reloads and login. Theme changes also sync between open tabs. If browser storage is disabled, the toggle still works for the current page.

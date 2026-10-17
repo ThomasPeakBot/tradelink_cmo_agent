@@ -1,4 +1,5 @@
 'use client';
+import { ThemeToggle } from '../../components/theme-toggle';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, ShieldCheck, TrendingUp } from 'lucide-react';
@@ -34,6 +35,9 @@ export default function Login() {
         <span className="muted">TradeLink CMO OS · V1</span>
       </section>
       <section className="login-form">
+        <div className="login-theme">
+          <ThemeToggle />
+        </div>
         <div>
           <span className="pill">
             <ShieldCheck size={14} /> INTERNAL WORKSPACE

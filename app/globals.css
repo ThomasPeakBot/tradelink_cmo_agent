@@ -1613,3 +1613,222 @@ td small {
     min-height: 170px;
   }
 }
+
+/* Theme preference is applied before paint and remembered on this device. */
+:root {
+  color-scheme: light;
+}
+.theme-toggle {
+  min-height: 36px;
+}
+.theme-toggle span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.theme-toggle .theme-to-light {
+  display: none;
+}
+.login-form {
+  position: relative;
+}
+.login-form > .login-theme {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: auto;
+}
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --ink: #e0e9e4;
+  --muted: #a5b7ae;
+  --green: #78d6ad;
+  --mint: #233e32;
+  --line: #31463d;
+  --paper: #101a16;
+  --nav: #0d211b;
+  --amber: #e4be73;
+}
+html[data-theme='dark'] .theme-to-dark {
+  display: none;
+}
+html[data-theme='dark'] .theme-to-light {
+  display: inline-flex;
+}
+html[data-theme='dark'] :is(.panel, .stat-card, .login-form, input, select, textarea, .btn) {
+  background: #192820;
+  border-color: var(--line);
+}
+html[data-theme='dark'] .topbar {
+  background: #14221b;
+}
+html[data-theme='dark']
+  :is(
+    label,
+    td,
+    .record-body,
+    .markdown,
+    .markdown h4,
+    .breadcrumb strong,
+    .chart-foot strong,
+    .governance-strip strong,
+    .insight-card h2,
+    .context-list strong,
+    .helper-note h4,
+    .score,
+    .priority-row strong
+  ) {
+  color: var(--ink);
+}
+html[data-theme='dark']
+  :is(
+    .eyebrow,
+    .icon-btn,
+    .breadcrumb,
+    .connection,
+    .stat-card > div,
+    .stat-card p,
+    .panel-head p,
+    .chart-legend,
+    .chart-foot,
+    .channel-row small,
+    .governance-strip,
+    .governance-strip p,
+    .page-footer,
+    th,
+    .empty,
+    .alert-row p,
+    .chat-welcome p,
+    .chat-welcome > button,
+    .context-list > div,
+    .context-list > div > span,
+    .helper-note,
+    .message-meta,
+    .message-meta span,
+    .report-link,
+    .file-drop,
+    .login-note,
+    .insight-card p,
+    .insight-card .eyebrow
+  ) {
+  color: var(--muted);
+}
+html[data-theme='dark']
+  :is(
+    .btn:hover,
+    .icon-btn:hover,
+    .chat-welcome > button:hover,
+    .report-link.selected,
+    .message.user,
+    .avatar.small
+  ) {
+  background: #294336;
+}
+html[data-theme='dark']
+  :is(
+    .insight-card,
+    .governance-strip,
+    .safety-banner,
+    .review-result,
+    .message,
+    .code-block,
+    .file-drop,
+    .spark-icon,
+    .chat-composer select
+  ) {
+  background: #203329;
+  border-color: var(--line);
+  color: #c0d8c8;
+}
+html[data-theme='dark'] :is(th, .bar-track) {
+  background: #14221b;
+}
+html[data-theme='dark']
+  :is(
+    th,
+    td,
+    .chart-foot,
+    .priority-row,
+    .alert-row,
+    .chat-welcome > button,
+    .chat-composer,
+    .report-link,
+    .message.user
+  ) {
+  border-color: var(--line);
+}
+html[data-theme='dark'] .btn.primary {
+  background: #276e50;
+  border-color: #428e6b;
+  color: #f1fbf5;
+}
+html[data-theme='dark'] .btn.primary:hover {
+  background: #31825f;
+}
+html[data-theme='dark'] :is(.badge, .pill) {
+  background: #2c3c33;
+  color: #c3d2c7;
+}
+html[data-theme='dark'] :is(.badge.green, .pill) {
+  background: #224531;
+  color: #a0e4b8;
+}
+html[data-theme='dark'] :is(.badge.amber, .badge.demo, .alert-symbol, .demo-banner) {
+  background: #393323;
+  color: #e2c78b;
+  border-color: #51482f;
+}
+html[data-theme='dark'] :is(.demo-banner strong, .demo-banner .badge) {
+  background: transparent;
+  color: #e2c78b;
+}
+html[data-theme='dark'] .badge.neutral {
+  background: #293746;
+  color: #bacfe5;
+}
+html[data-theme='dark'] :is(.error, .alert-symbol.high) {
+  background: #402923;
+  color: #ffb6a5;
+}
+html[data-theme='dark'] input::placeholder,
+html[data-theme='dark'] textarea::placeholder {
+  color: #9aafa1;
+}
+html[data-theme='dark'] .chart text {
+  fill: var(--muted);
+}
+html[data-theme='dark'] .chart line {
+  stroke: var(--line);
+}
+html[data-theme='dark'] .chart path[stroke='#168564'] {
+  stroke: var(--green);
+}
+html[data-theme='dark'] .chart circle {
+  fill: var(--green);
+  stroke: #192820;
+}
+html[data-theme='dark'] .legend-line:not(.target) {
+  background: var(--green);
+}
+@media (max-width: 700px) {
+  .topbar-right {
+    gap: 5px;
+  }
+  .theme-toggle {
+    padding: 8px;
+    font-size: 10px;
+  }
+}
+html[data-theme='dark'] :is(.insight-card h4, .insight-card > button) {
+  color: #b8ddc5;
+}
+html[data-theme='dark'] .insight-card small {
+  color: var(--muted);
+}
+html[data-theme='dark'] .insight-rule {
+  background: var(--line);
+}
+html[data-theme='dark'] .rank {
+  background: #294336;
+  color: #bfd9c8;
+}

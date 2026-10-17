@@ -1,4 +1,5 @@
 'use client';
+import { ThemeToggle } from './theme-toggle';
 import { useRouter } from 'next/navigation';
 import { hasDemoContext } from '@/lib/demo';
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
@@ -510,6 +511,7 @@ export function OperatingSystem() {
             <strong>{tab}</strong>
           </div>
           <div className="topbar-right">
+            <ThemeToggle />
             <span className="connection">
               <i />
               PostgreSQL connected
