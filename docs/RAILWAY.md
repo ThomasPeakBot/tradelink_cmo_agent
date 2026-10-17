@@ -1,60 +1,48 @@
-# Railway deployment runbook
+# TradeLink Railway deployment
 
-Deployment has been authorized by the user. There is no public application URL until Railway accepts an upload and the deployed service passes its readiness checks. No OpenAI credential is required.
+## Hosted application
 
-## Access required from the account owner
+- Application: https://web-production-7ff96.up.railway.app
+- Login: https://web-production-7ff96.up.railway.app/login
+- Project: `tradelink-cmo` — `5dcb62c9-93ad-4d51-a27a-6686a324b08b`
+- Workspace: Thomas Adamkowski's Projects
+- Environment: `production` — `ccb1fbce-a8bf-4ac9-accb-08295b699fd5`
+- Web service: `web` — `81c43578-1d5f-455e-a18e-7171d7db1e4a`
+- Database: `Postgres` — `c00aa1ec-d2ca-4570-9cb1-17e4200749fd`, persistent Railway volume
+- Application source commit: `e5c6472` (CLI upload; no GitHub push or autodeploy source configured)
 
-The cloud workspace initially had no Railway CLI session, `RAILWAY_TOKEN`, or `RAILWAY_API_TOKEN`. A read-only CLI `whoami` returned `Unauthorized`. A request to the official Railway API was rejected by the environment egress proxy (CONNECT HTTP 403).
+Railway successfully built and started deployment `b0534d82-a549-40c5-b23b-64bf3af855ec`. Its startup logs confirm the SQL migration applied, labeled demo data and administrator were initialized, and Next.js started. The Railway-managed domain reports `ACTIVE` and targets port 3000. Subsequent restarts have also started successfully using the same persistent PostgreSQL database. Deployment and configuration identifiers below are retained for maintenance.
 
-The cloud configuration draft now declares:
+## Login and credentials
 
-- Railway network destinations: `railway.com`, `backboard.railway.com`, and `binaries.prisma.sh` (preserving `api.openai.com`).
-- A personal `RAILWAY_API_TOKEN` binding, forwarded only to `backboard.railway.com`.
+The administrator email is `thomas@peakbot.com`. A unique cryptographically generated password was sent directly to Railway's `ADMIN_PASSWORD` variable through CLI stdin. It was not printed, committed, or written to a local credential file. The account owner can reveal it under **Railway → tradelink-cmo → web → Variables → ADMIN_PASSWORD**. Never use the public development password for this deployment.
 
-The owner can create an account token in Railway account settings and enter it securely in the cloud environment settings. Do not paste it into chat, commit it, or print its value. Saving the draft does not itself activate the token/network policy. After the settings are applied, recheck `railway whoami` and the API operation before requesting more credentials. A browserless sign-in is an alternative once Railway network access is working.
+`BOOTSTRAP_MODE=demo` was explicitly chosen, so sample metrics, channel attribution, experiments and unknown company facts remain labeled demo. Replace assumptions with approved company knowledge before using recommendations for business decisions. OpenAI credentials are not configured; local evidence mode is available immediately.
 
-For this task the Railway CLI 5.69.0 was downloaded from the official GitHub release to `/tmp/tradelink-railway-bin/railway`. Its archive SHA-256 was verified against the digest published on GitHub. No TLS or checksum verification was disabled. `/tmp` tools may need reinstalling in a new task.
+`DATABASE_URL` uses Railway's `${{Postgres.DATABASE_URL}}` reference. `APP_URL` is the exact public HTTPS origin above. First boot creates the workspace and administrator; repeated startup preserves existing records and credentials. Changing the Railway password variable alone does not rotate an existing database user's password: use the documented `admin:password` operation intentionally.
 
-## Provision and deploy after authentication
+## Build and startup
 
-Use the existing checkout; it can be uploaded directly with the CLI. A GitHub push is not necessary for a CLI upload. Use a new Railway project and a new PostgreSQL service; do not modify unrelated existing services.
+The production Dockerfile installs OpenSSL and CA certificates, performs frozen `npm ci`, generates Prisma, builds Next.js, and runs as the unprivileged Node user. It uses ordinary system trust on Railway. Railway's builder rejects `type=secret` mounts, so any CA mount required for local verification behind the cloud proxy belongs in a temporary local-only Dockerfile variant, not the production file. No TLS, artifact checksum, or package integrity verification was disabled.
 
-1. Confirm the authenticated Railway workspace and select the intended workspace if the account has more than one.
-2. Create `tradelink-cmo` and a `web` service plus PostgreSQL. Link `DATABASE_URL` via the Railway PostgreSQL service reference, not a copied credential in source code.
-3. Generate a Railway service domain and set `APP_URL` to its exact HTTPS origin. Configure `ADMIN_EMAIL` and a unique `ADMIN_PASSWORD` securely in the **Railway web service's** variables. The admin password is a real server-side value, not a cloud proxy placeholder. It must not be the documented development password.
-4. Choose initial data: `BOOTSTRAP_MODE=empty` (default, actual production workspace) or `BOOTSTRAP_MODE=demo` (labeled sample data, for evaluation). This is read only when the database is fresh.
-5. Upload the checkout using `railway up` with explicit project, service, and environment identifiers. The Dockerfile runs the lockfile installation and production build. Startup runs `npm run start:production`: migrations → first-boot initialization → Next.js. Stop on build or bootstrap errors and inspect sanitized logs.
-6. Wait for a successful deployment and HTTPS health response, then test `/login`, authentication, `/api/workspace`, pace assessment, and a persisted local-evidence briefing. If this cloud environment blocks the newly generated service hostname, add that exact hostname to the egress configuration rather than broadening to all hosts.
-7. Return the verified HTTPS login URL to the user. They log in with the email/password set in Railway. Never return a made-up URL or the public development password for production.
+`npm run start:production` applies checked-in SQL migrations, bootstraps a fresh database, and starts Next.js on Railway's `PORT`. Database state resides in PostgreSQL rather than the application container.
 
-`start:production` serializes first boot with a PostgreSQL advisory lock. A fresh empty workspace is created atomically. Existing company/admin records are left unchanged. Partially initialized databases stop for review rather than overwriting records. Repeated startup does not reset an existing administrator's password. Application state remains in Railway PostgreSQL, independent of the disposable app container.
+The web service's deployment configuration was explicitly set and read back through Railway's API:
 
-## Current verification boundary
+- Dockerfile path: `Dockerfile`
+- Start command: `npm run start:production`
+- Path: `/api/health` (queries PostgreSQL)
+- Timeout: 120 seconds
+- Restart policy: `ON_FAILURE`, maximum 5 retries
 
-The application and first-boot scripts can be tested locally while Railway access is missing. A local build, cloud configuration save, or unauthenticated CLI installation is not a remote deployment. Update this record with real project/service IDs and readiness evidence after successful Railway deployment. Never store credentials in this document.
+Railway's initial CLI upload used Dockerfile configuration from the repository. Its redeploy action defaulted to Railpack until explicit service configuration was stored; both compiled and started this application successfully. The repository also retains `railway.toml`. Railway currently supports it but warns of Config as Code deprecation on 2026-12-01; migrate to its supported Infrastructure as Code workflow before that deadline.
 
-## Deployment-preparation checks
+## Verification and access boundaries
 
-Production first-boot initialization was exercised against two disposable PostgreSQL databases: empty mode inserted no synthetic metrics, and explicit demo mode inserted 30 observations, all labeled demo. A repeated empty-mode bootstrap without password variables preserved the existing administrator and data. Lint, TypeScript, 34 unit tests, and the Next.js production build pass.
+The local production image passed migrations, administrator bootstrap, Secure-cookie login, authenticated workspace access, persisted local-evidence Daily Growth Brief generation, and logout. Local validation includes 34 unit tests, six database integration tests, nine browser/API tests, lint, TypeScript and production compilation.
 
-The local Docker dependency install initially failed because the stock image did not trust this cloud environment's TLS proxy. The Dockerfile now accepts an optional build-only `platform_ca` secret; using the platform's installed CA bundle restored npm installation with TLS verification intact. No proxy certificate is copied into the resulting image. The Docker build subsequently identified missing OpenSSL in the slim base image; OpenSSL and CA certificates are now installed explicitly. Full image validation remains pending because the running environment blocks the Prisma native engine/checksum download from `binaries.prisma.sh`. That exact domain was added to the configuration draft for review; checksum verification remains enabled.
+Railway's remote build and startup succeeded against its own PostgreSQL service. This cloud environment's egress policy blocks direct HTTPS requests to the newly generated `web-production-7ff96.up.railway.app` hostname; that proxy refusal is not an application HTTP failure. Direct public browser authentication has not been claimed as tested. To perform future cloud-side HTTPS checks, add that exact hostname to environment network settings while preserving the current Railway/OpenAI/package destinations.
 
-The container copies source files with ownership suitable for the unprivileged Node runtime and grants that runtime access to the generated Next.js cache. Production npm uses a separate writable temporary cache. No account credentials are baked into the image.
+Railway sign-in uses the official checksum-verified CLI with browserless OAuth. The machine's home directory is read-only, so the CLI runs in a temporary container with private writable storage at `/workspace/railway-deployment-access`, outside the application checkout. Keep that personal credential directory private; do not commit it or include it in a shared environment snapshot. No OAuth credential values belong in documentation or chat.
 
-The integrated `start:production` entrypoint was also verified against the empty disposable database on an unused local port: migration detection, existing-admin preservation, HTTP health, Secure-cookie authentication, and `NO DATA` pace behavior all succeeded.
-
-## Recheck after environment settings were applied
-
-The Railway API now returns HTTP 200 and the Docker image build completes. The running cloud machine still has no injected `RAILWAY_API_TOKEN`; the saved personal token requirement has no credential binding. Native `railway whoami` returned Unauthorized.
-
-The machine's home directory is physically read-only even after a scoped filesystem write grant, so the official CLI's normal `~/.railway` credential storage cannot be used. Browserless OAuth is instead started in a temporary Node container with a private, writable credential volume at `/workspace/railway-deployment-access` (outside the application checkout). The official CLI binary remains checksum-verified. Proxy routing and the platform CA bundle are passed through without disabling TLS verification. The account owner must approve Railway's device sign-in; do not assume the approval happened merely because the URL was issued.
-
-The image `tradelink-cmo:railway` built successfully with OpenSSL and the optional build-only platform CA bundle. Its unprivileged runtime was exercised against a fresh disposable PostgreSQL database: startup migration, administrator bootstrap, health, secure-cookie login, authenticated workspace, local-evidence Daily Growth Brief persistence and logout all passed. No API credentials or remote Railway resources were needed for these local checks.
-
-Remote deployment remains pending Railway authentication. No public login URL is claimed until actual Railway service deployment and HTTPS verification succeed.
-
-## First remote build correction
-
-Railway authentication succeeded and a new project, PostgreSQL service, web service and Railway-managed domain were created. The administrator uses the authenticated account email; a unique generated password was supplied to Railway through stdin without printing it or saving a local credential file. The login password is available to the account owner as the web service's `ADMIN_PASSWORD` variable.
-
-The first remote build rejected the optional local `type=secret` mount: Railway's Dockerfile parser supports cache mounts only. The production Dockerfile therefore uses plain `npm ci` with Railway's normal system trust. Local verification behind this cloud's TLS proxy must use a temporary local-only Dockerfile variant to mount the platform CA. No platform proxy certificate or credential is embedded in the production image. This is a builder compatibility correction; source and runtime behavior are unchanged.
+Remote resources were created only in this new TradeLink project. No existing project was modified and no paid-plan upgrade was performed. Cloud configuration drafts and filesystem snapshots remain separate from this live Railway deployment.

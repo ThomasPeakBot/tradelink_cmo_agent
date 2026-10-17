@@ -23,3 +23,7 @@ The earlier full TradeLink business specification was unavailable. The supplied 
 ## Deployment preparation follow-up
 
 After network settings were applied, the Railway-compatible Docker image built successfully and passed an end-to-end local container smoke check with fresh PostgreSQL: migrations, first-boot administrator, health, authentication, workspace access, persisted local-evidence briefing and session revocation. Production bootstrap unit coverage increased the unit total to 34. A repeated first-boot check preserved credentials and data. No checksum or TLS verification was disabled. Remote Railway authentication and deployment are separate and remain pending the account owner's sign-in.
+
+## Railway deployment
+
+Railway's remote production build passed, the application SQL migration and labeled demo seed completed against Railway PostgreSQL, and Next.js started successfully in deployment `b0534d82-a549-40c5-b23b-64bf3af855ec`. The managed service domain is active. Explicit `/api/health` configuration was saved and read back through the Railway API. See `docs/RAILWAY.md` for restart verification, credentials handling, and the distinction between Railway readiness and direct browser verification (the cloud proxy blocks the new public hostname).

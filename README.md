@@ -95,9 +95,9 @@ If Chromium is preinstalled, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/c
 
 ## Railway deployment
 
-`Dockerfile` and `railway.toml` prepare a Railway-compatible build and database health check. No deployment has been performed.
+The application is deployed at https://web-production-7ff96.up.railway.app. See [Railway deployment details](docs/RAILWAY.md) for the login, secure password location, resource identifiers and verification evidence.
 
-Deployment is now authorized for this task; execution still requires Railway account access. See [Railway runbook](docs/RAILWAY.md).
+The following describes the provisioning and startup configuration used for this deployment. OpenAI is optional.
 
 1. Provision a PostgreSQL service and bind its `DATABASE_URL` to the app. Use a fresh database for real operation.
 2. Set `APP_URL` to the exact HTTPS application origin, `ADMIN_EMAIL` to your chosen login, and `ADMIN_PASSWORD` to a unique 16–256 character password in Railway service variables. Never reuse the public demo password. Optionally configure OpenAI securely.
@@ -111,7 +111,7 @@ Secrets belong in environment settings, never committed files. `OPENAI_API_KEY` 
 
 This implementation uses the requirements provided with this task. A separate earlier “full TradeLink CMO specification” was not present in the conversation or repository. No product, market, pricing or positioning claim has been invented as verified knowledge. Replace the explicitly labeled demo knowledge with approved TradeLink material.
 
-This is a single-company internal workspace, not multi-tenant SaaS. There is no autonomous execution, deployment, external notification service, SSO, password-reset email flow, or live marketing integration in V1. Chat history is private to each authenticated user; company operating records and reports are shared among internal users. Keep routine knowledge inputs concise; the OpenAI request includes the stored workspace context and is intended for a small internal V1 dataset.
+This is a single-company internal workspace, not multi-tenant SaaS. There is no autonomous execution, external notification service, SSO, password-reset email flow, or live marketing integration in V1. Chat history is private to each authenticated user; company operating records and reports are shared among internal users. Keep routine knowledge inputs concise; the OpenAI request includes the stored workspace context and is intended for a small internal V1 dataset.
 
 ## Dependency review
 
