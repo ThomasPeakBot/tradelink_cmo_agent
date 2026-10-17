@@ -53,6 +53,9 @@ function transport(respond?: Respond) {
     expect(options?.redirect).toBe('error');
     expect(options?.cache).toBe('no-store');
     expect((options?.headers as Record<string, string>)['Stripe-Version']).toBe(STRIPE_API_VERSION);
+    if (url.pathname === '/v1/subscriptions') expect(url.searchParams.get('price')).toBeTruthy();
+    if (url.pathname === '/v1/invoices') expect(url.searchParams.get('customer')).toBeTruthy();
+    expect(url.pathname).not.toBe('/v1/customers');
     let result = respond?.(url);
     if (result === undefined) {
       result = url.pathname.startsWith('/v1/products/')
@@ -61,8 +64,12 @@ function transport(respond?: Respond) {
           ? page([price()])
           : url.pathname === '/v1/subscriptions'
             ? page([subscription('sub_A', 'cus_A')])
-            : url.pathname === '/v1/customers'
-              ? page([{ id: 'cus_A', livemode: true, email: 'private@example.invalid' }])
+            : url.pathname.startsWith('/v1/customers/')
+              ? {
+                  id: url.pathname.split('/').at(-1),
+                  livemode: true,
+                  email: 'private@example.invalid',
+                }
               : url.pathname === '/v1/invoices'
                 ? page([invoice('in_A')])
                 : page([]);
@@ -143,7 +150,43 @@ describe('restricted live Stripe adapter', () => {
     expect(s.paidInvoicesMonthToDate).toBe(2);
     expect(
       fetcher.mock.calls.filter(([u]) => new URL(String(u)).searchParams.has('starting_after')),
-    ).toHaveLength(4);
+    ).toHaveLength(5);
+  });
+  it('includes archived prices and late payments by historical scoped customers without account-wide reads', async () => {
+    const fetcher = transport((url) => {
+      if (url.pathname === '/v1/prices')
+        return page([
+          url.searchParams.get('active') === 'false'
+            ? price('price_Archived', 'prod_TradeLink', { unit_amount: 3000 })
+            : price(),
+        ]);
+      if (url.pathname === '/v1/subscriptions')
+        return page([
+          url.searchParams.get('price') === 'price_Archived'
+            ? subscription(
+                'sub_Old',
+                'cus_Old',
+                [item(price('price_Archived', 'prod_TradeLink', { unit_amount: 3000 }))],
+                'canceled',
+              )
+            : subscription('sub_A', 'cus_A'),
+        ]);
+      if (url.pathname === '/v1/invoices' && url.searchParams.get('customer') === 'cus_Old')
+        return page([
+          invoice('in_OldPaidThisMonth', [line('prod_TradeLink', 'price_Archived')], {
+            amount_paid: 3000,
+          }),
+        ]);
+    });
+    const [s] = await new StripeReadOnlyProvider(key, fetcher, () => now).fetchData();
+    expect(s.customerIds).toEqual(['cus_A']);
+    expect(s.grossMrr).toBe(40);
+    expect(s.paidInvoiceAmountMonthToDate).toBe(70);
+    expect(s.paidInvoicesMonthToDate).toBe(2);
+    expect(
+      fetcher.mock.calls.some(([u]) => new URL(String(u)).pathname === '/v1/customers/cus_Old'),
+    ).toBe(false);
+    expect(fetcher.mock.calls.length).toBeLessThan(15);
   });
   it('filters other products and excludes trial, past due, paused, canceled and free customers', async () => {
     const [s] = await new StripeReadOnlyProvider(

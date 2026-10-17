@@ -145,6 +145,11 @@ export class StripeReadOnlyProvider implements IntegrationProvider<StripeSnapsho
           headers: { Authorization: `Bearer ${this.key}`, 'Stripe-Version': STRIPE_API_VERSION },
         });
       } catch {
+        if (Date.now() >= this.deadline)
+          throw new StripeReadError(
+            'limit',
+            'Stripe scan exceeded its time limit; no partial snapshot was saved.',
+          );
         throw new StripeReadError(
           'network',
           'Stripe could not be reached; no partial snapshot was saved.',
@@ -225,12 +230,28 @@ export class StripeReadOnlyProvider implements IntegrationProvider<StripeSnapsho
       for (const product of scope.products) live.parse(await this.get(`/v1/products/${product}`));
       const scopedPrices = new Set<string>();
       for (const product of scope.products) {
-        for (const raw of await this.list('/v1/prices', { product }))
-          scopedPrices.add(priceSchema.parse(raw).id);
+        for (const active of ['true', 'false']) {
+          for (const raw of await this.list('/v1/prices', { product, active })) {
+            const price = priceSchema.parse(raw);
+            if (idOf(price.product) !== product)
+              throw new StripeReadError(
+                'scope',
+                'Stripe returned a price outside the configured scope.',
+              );
+            scopedPrices.add(price.id);
+          }
+        }
       }
-      const subscriptions = (await this.list('/v1/subscriptions', { status: 'all' })).map((s) =>
-        subscriptionSchema.parse(s),
-      );
+      // Apply scope at Stripe, not after reading the shared PeakBot account's entire history.
+      const subscriptionMap = new Map<string, z.infer<typeof subscriptionSchema>>();
+      for (const price of scopedPrices) {
+        for (const raw of await this.list('/v1/subscriptions', { status: 'all', price })) {
+          const subscription = subscriptionSchema.parse(raw);
+          subscriptionMap.set(subscription.id, subscription);
+        }
+      }
+      const subscriptions = [...subscriptionMap.values()];
+      const billingCustomers = new Set<string>();
       const customers = new Set<string>();
       let active = 0,
         trialing = 0,
@@ -245,6 +266,7 @@ export class StripeReadOnlyProvider implements IntegrationProvider<StripeSnapsho
           ).map((i) => itemSchema.parse(i));
         const items = sub.items.data.filter((i) => scope.products.includes(idOf(i.price.product)));
         if (!items.length) continue;
+        billingCustomers.add(idOf(sub.customer));
         // The list includes historical/inactive prices; embedded prices remain the authority for legacy subscriptions.
         for (const item of items) scopedPrices.add(item.price.id);
         if (sub.status === 'trialing') trialing++;
@@ -290,24 +312,44 @@ export class StripeReadOnlyProvider implements IntegrationProvider<StripeSnapsho
           'unsupported_price',
           'A scoped active subscription uses unsupported pricing. Reconcile currency, metered/tiered prices, or quantity transformations before syncing.',
         );
-      // Read only scoped customer identities, never persist names, email, payment or address data.
-      const foundCustomers = new Set<string>();
-      if (customers.size)
-        for (const raw of await this.list('/v1/customers')) {
-          const value = live.parse(raw);
-          if (customers.has(value.id)) foundCustomers.add(value.id);
-        }
-      if (foundCustomers.size !== customers.size)
-        throw new StripeReadError(
-          'customer',
-          'A scoped active customer could not be verified; reconcile before syncing.',
+      // Verify only eligible customers. Five concurrent reads keep scans bounded without account-wide lists.
+      const customerIds = [...customers];
+      for (let i = 0; i < customerIds.length; i += 5) {
+        await Promise.all(
+          customerIds.slice(i, i + 5).map(async (customer) => {
+            if (!/^cus_[a-zA-Z0-9]+$/.test(customer))
+              throw new StripeReadError('customer', 'Invalid Stripe customer reference.');
+            const value = live.parse(await this.get(`/v1/customers/${customer}`));
+            if (value.id !== customer)
+              throw new StripeReadError(
+                'customer',
+                'Scoped customer identity could not be verified.',
+              );
+          }),
         );
+      }
+      // Include historical scoped subscription customers so late payments and churned customers are retained.
+      const invoiceMap = new Map<string, z.infer<typeof invoiceSchema>>();
+      const billingIds = [...billingCustomers];
+      for (let i = 0; i < billingIds.length; i += 5) {
+        const pages = await Promise.all(
+          billingIds.slice(i, i + 5).map(async (customer) => {
+            if (!/^cus_[a-zA-Z0-9]+$/.test(customer))
+              throw new StripeReadError('customer', 'Invalid Stripe customer reference.');
+            return this.list('/v1/invoices', { status: 'paid', customer });
+          }),
+        );
+        for (const rows of pages)
+          for (const raw of rows) {
+            const invoice = invoiceSchema.parse(raw);
+            invoiceMap.set(invoice.id, invoice);
+          }
+      }
       let paidAmount = 0,
         paidCount = 0;
       const monthStart = Date.UTC(captured.getUTCFullYear(), captured.getUTCMonth(), 1) / 1000;
-      // Scan paid invoices without a created-date filter: old invoices can be paid in the current month.
-      for (const raw of await this.list('/v1/invoices', { status: 'paid' })) {
-        const invoice = invoiceSchema.parse(raw);
+      // No created-date cutoff: old invoices can be paid in the current month.
+      for (const invoice of invoiceMap.values()) {
         const paidAt = invoice.status_transitions.paid_at;
         if (
           invoice.status !== 'paid' ||
