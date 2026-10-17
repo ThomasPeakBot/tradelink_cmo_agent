@@ -7,7 +7,7 @@ export async function syncStripe(actor: string, provider = new StripeReadOnlyPro
   // A durable lease prevents multiple app instances from racing or exhausting Stripe rate limits.
   const leaseId = `stripe-sync:${scope.id}`;
   const acquired = await db.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(74182355)`;
+    await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(74182355)`;
     const previous = await tx.auditLog.findFirst({
       where: {
         entityId: leaseId,
