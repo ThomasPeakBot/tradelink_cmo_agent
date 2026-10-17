@@ -52,3 +52,9 @@ The machine's home directory is physically read-only even after a scoped filesys
 The image `tradelink-cmo:railway` built successfully with OpenSSL and the optional build-only platform CA bundle. Its unprivileged runtime was exercised against a fresh disposable PostgreSQL database: startup migration, administrator bootstrap, health, secure-cookie login, authenticated workspace, local-evidence Daily Growth Brief persistence and logout all passed. No API credentials or remote Railway resources were needed for these local checks.
 
 Remote deployment remains pending Railway authentication. No public login URL is claimed until actual Railway service deployment and HTTPS verification succeed.
+
+## First remote build correction
+
+Railway authentication succeeded and a new project, PostgreSQL service, web service and Railway-managed domain were created. The administrator uses the authenticated account email; a unique generated password was supplied to Railway through stdin without printing it or saving a local credential file. The login password is available to the account owner as the web service's `ADMIN_PASSWORD` variable.
+
+The first remote build rejected the optional local `type=secret` mount: Railway's Dockerfile parser supports cache mounts only. The production Dockerfile therefore uses plain `npm ci` with Railway's normal system trust. Local verification behind this cloud's TLS proxy must use a temporary local-only Dockerfile variant to mount the platform CA. No platform proxy certificate or credential is embedded in the production image. This is a builder compatibility correction; source and runtime behavior are unchanged.
