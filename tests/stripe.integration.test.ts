@@ -74,7 +74,8 @@ describe('persisted Stripe evidence', () => {
       prompt: 'Review billing',
       context: w,
     });
-    expect(report.content).toContain('Gross MRR');
+    expect(report.content).toContain('Gross MRR: USD 80.00');
+    expect(report.content).toContain('paid invoice amount: USD 80.00');
     expect(report.content).toContain('observed set changes');
     expect(report.content).not.toContain('cus_private');
     await refreshAlerts(user.id);
