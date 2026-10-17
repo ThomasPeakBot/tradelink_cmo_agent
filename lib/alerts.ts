@@ -37,7 +37,10 @@ export async function refreshAlerts(userId: string) {
           },
         ]
       : []),
-    ...(s.latest && s.latest.churned > s.latest.newSubs
+    ...(s.latest &&
+    s.latest.churned !== null &&
+    s.latest.newSubs !== null &&
+    s.latest.churned > s.latest.newSubs
       ? [
           {
             key: `churn:${s.latest.date}`,

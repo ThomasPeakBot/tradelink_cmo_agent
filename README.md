@@ -51,7 +51,7 @@ With no `OPENAI_API_KEY`, the **local evidence** provider produces deterministic
 
 With `OPENAI_API_KEY` (or `TRADELINK_OPENAI_API_KEY` in cloud settings that reserve `OPENAI_*` names) configured, the OpenAI adapter calls the Chat Completions API using `OPENAI_MODEL` (default `gpt-4.1-mini`). Each request includes stored company evidence and the authenticated user’s recent conversation. You may force local mode in chat or briefing generation. Live errors are surfaced; the app does not silently substitute a fabricated successful AI response. No tools or external executors are registered. Company context is sent to OpenAI only when that provider is used.
 
-`IntelligenceProvider` separates reasoning from the application. `IntegrationProvider<T>` / `ManualIntegrationProvider<T>` define the read-only acquisition interface for future billing, analytics, CRM, email and ads adapters. No live adapter is claimed to be implemented. Keep write-capable integration execution outside V1.
+`IntelligenceProvider` separates reasoning from the application. `IntegrationProvider<T>` / `ManualIntegrationProvider<T>` define the read-only acquisition interface for future billing, analytics, CRM, email and ads adapters. A manual-triggered, read-only Stripe adapter is implemented; see [Stripe setup, metric definitions and validation](docs/STRIPE.md). It requires an explicit TradeLink product scope and restricted live key. It is not connected until deployed and successfully reconciled. Keep write-capable integration execution outside V1.
 
 ## Growth math
 
@@ -111,7 +111,7 @@ Secrets belong in environment settings, never committed files. `OPENAI_API_KEY` 
 
 This implementation uses the requirements provided with this task. A separate earlier “full TradeLink CMO specification” was not present in the conversation or repository. No product, market, pricing or positioning claim has been invented as verified knowledge. Replace the explicitly labeled demo knowledge with approved TradeLink material.
 
-This is a single-company internal workspace, not multi-tenant SaaS. There is no autonomous execution, external notification service, SSO, password-reset email flow, or live marketing integration in V1. Chat history is private to each authenticated user; company operating records and reports are shared among internal users. Keep routine knowledge inputs concise; the OpenAI request includes the stored workspace context and is intended for a small internal V1 dataset.
+This is a single-company internal workspace, not multi-tenant SaaS. There is no autonomous execution, external notification service, SSO, password-reset email flow, or live marketing integration in V1. Stripe billing is a separate read-only adapter with explicit manual synchronization; credentials alone do not activate it. Chat history is private to each authenticated user; company operating records and reports are shared among internal users. Keep routine knowledge inputs concise; the OpenAI request includes the stored workspace context and is intended for a small internal V1 dataset.
 
 ## Dependency review
 

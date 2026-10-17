@@ -1,0 +1,38 @@
+# Read-only Stripe billing adapter
+
+This adapter is implemented but is not evidence of a live connection. Credentials alone do not sync data. No webhook, scheduler, auto-deployment, or Stripe write operation is included.
+
+## Configuration and activation
+
+1. Keep the existing Railway `STRIPE_SECRET_KEY` change staged until a separate deployment is authorized. Do not reveal the key to chat, logs, source control, tests, or the client.
+2. Verify the live PeakBot LLC account and identify the actual TradeLink product IDs in Stripe Product catalog. Set `STRIPE_PRODUCT_IDS` to those comma-separated IDs in server configuration. This explicit scope is mandatory because the billing account is shared with other products. Changing the product scope starts an independent snapshot series and does not blend histories.
+3. The restricted LIVE key needs Read only for Customers, Subscriptions, Products, Prices, and Invoices. All other and Connect permissions stay None. No payment method, payout, transfer, refund, dispute, balance, or webhook access is required. Nested subscription items and invoice lines are read under the corresponding resource; if Stripe denies them, stop and review the exact permission rather than granting broad access.
+4. After a separately approved deployment, apply the checked-in migration through the existing migration process. It adds only the `StripeSnapshot` table; no existing manual record is rewritten.
+5. Sign in as an administrator and use Settings → Sync Stripe read-only. The action verifies same-origin and administrator access, reads Stripe, saves an atomic UTC-day snapshot, and refreshes growth alerts. GET requests never sync. There is a durable three-minute rate limit shared across instances.
+6. Reconcile the first result against the same product scope in Stripe before relying on reports. Repeat on consecutive UTC dates to establish observed movement. The first snapshot cannot establish acquisition, churn, or a forecast.
+
+No deployment or live credential test was performed while preparing this adapter. Live validation remains pending until product IDs and a deployment are authorized. Leave Railway disconnected from GitHub until automatic deployments are separately approved.
+
+## Metric definitions
+
+- **Subscribers:** distinct Stripe customer IDs with at least one scoped active, unpaused subscription item with positive USD recurring list-price value and quantity. Multiple subscriptions count once. Trialing, past-due, canceled, paused-collection, and zero-price-only customers are excluded. Discounts do not change eligibility, so a fully discounted paid-price customer can still count. Active subscription totals are separate from distinct customer totals and may include zero-price subscriptions.
+- **Gross MRR:** scoped active, unpaused per-unit recurring price × quantity normalized to a month (years ÷ 12; weeks × 52/12; days × 365/12; interval_count is respected). It is before discounts, refunds, credits, and fees, and is not Stripe's net MRR. Inclusive-tax list prices can include tax. Amounts are rounded only after aggregation. Trials/past-due/canceled subscriptions are excluded, while scheduled cancellations remain active until status changes.
+- **MTD paid invoice amount:** sum of `amount_paid` on fully scoped USD invoices with `status=paid` and `status_transitions.paid_at` in the current UTC month through the snapshot timestamp. Includes taxes and payments marked paid out of band; not net revenue, recognized revenue, or a cash reconciliation. Refunds, chargebacks, fees, and subsequent credits are not queried. Mixed-product or unclassifiable additional lines cause the entire invoice to be excluded with a visible warning when it contains a matched line. Invoices with no matched line are outside the recognized scope. All paid invoices are paginated, including old invoices paid this month; there is no incorrect invoice-created-date cutoff.
+- **New/churned:** additions/removals in the eligible customer set between consecutive UTC-date snapshots. These are observed state changes, not Stripe event counts. Same-day re-sync replaces that day's snapshot. Missing days and intra-day subscribe/cancel/reactivate activity cannot be reconstructed. Unknown flows render as dashes, and forecasts remain unavailable without comparable flows.
+- **Visitors and spend:** unavailable for Stripe snapshots, never fabricated as zero. Manual and demo observations remain stored independently but are excluded from the dashboard metric series once scoped Stripe snapshots exist. Other demo knowledge, channels and experiments remain explicitly labeled and may still mark the broader workspace as demo.
+
+Tiered/metered/transformed/missing pricing and non-USD scoped billing fail closed rather than silently understate totals. These require a reviewed extension before activation. A full scan can encounter rate or time limits on a large account; incomplete data is never saved as a successful snapshot. Reads are not a transactional snapshot of Stripe: reconcile against the capture time, especially if billing changes during the scan.
+
+## Security and failure behavior
+
+- Server-side only; fixed `https://api.stripe.com` origin, allowlisted paths, GET method, no redirects, no caching, 15-second request timeout, 120-second scan deadline, maximum 500 HTTP attempts, at most three attempts per request, bounded Retry-After/backoff.
+- API version is pinned to `2026-09-30.endive`. The adapter uses current invoice `pricing.price_details` and paginates both top-level and nested lists. Repeated cursors, malformed payloads and non-live objects fail closed.
+- No secret, raw response, customer contact information, payment details, or upstream error body is logged or saved. The database retains pseudonymous customer IDs only to calculate observed movement. Workspace/API/AI evidence includes aggregates only, never those customer IDs or credentials.
+- A failed read retains the previous successful snapshot and writes a sanitized audit entry. The UI shows last successful sync time. A later alert-refresh failure can return an error after the snapshot was committed; inspect the success audit and last sync time before retrying.
+- A schema migration and a reviewed deployment are required before production activation. Do not point local tests at production or retrieve the staged production key for tests.
+
+## Verification
+
+Unit fixtures cover scoped totals, customer deduplication, annual/multi-month quantities, complete pagination, nested lists, delayed invoice payment, mixed invoices, unsupported pricing, live-only enforcement, permission failures, bounded retries, error redaction, snapshot movement, durable lease behavior, safe failure auditing, and route authentication/role/origin boundaries. PostgreSQL and browser checks run through the existing GitHub CI workflow.
+
+Primary API references: [subscriptions](https://docs.stripe.com/api/subscriptions/list), [prices](https://docs.stripe.com/api/prices/object), [invoice lines](https://docs.stripe.com/api/invoice-line-item/object), [pagination](https://docs.stripe.com/api/pagination), and [restricted keys](https://docs.stripe.com/keys/restricted-api-keys).

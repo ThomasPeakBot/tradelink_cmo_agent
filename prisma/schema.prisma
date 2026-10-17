@@ -173,3 +173,15 @@ model ChatMessage {
 
   @@index([userId, createdAt])
 }
+
+// Aggregate billing evidence plus pseudonymous customer IDs for observed daily movement.
+// No credentials or customer contact/payment information are stored.
+model StripeSnapshot {
+  id         String   @id @default(cuid())
+  scopeId    String
+  date       DateTime @db.Date
+  capturedAt DateTime
+  data       Json
+
+  @@unique([scopeId, date])
+}

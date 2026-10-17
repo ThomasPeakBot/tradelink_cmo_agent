@@ -1,3 +1,5 @@
+import { syncStripe } from '@/lib/stripe-sync';
+import { StripeReadError } from '@/lib/stripe';
 import { readJson, PayloadTooLarge } from '@/lib/http';
 import { hasDemoContext } from '@/lib/demo';
 import { NextResponse } from 'next/server';
@@ -59,7 +61,9 @@ export async function POST(request: Request, { params }: Route) {
       entityId: string,
       details: string,
     ) => tx.auditLog.create({ data: { actor: user.email, action, entityType, entityId, details } });
-    if (resource === 'metrics') {
+    if (resource === 'stripe-sync') {
+      await syncStripe(user.email);
+    } else if (resource === 'metrics') {
       const input = metricSchema.parse(body);
       await db.$transaction(async (tx) => {
         const result = await tx.dailyMetric.upsert({
@@ -293,9 +297,15 @@ export async function POST(request: Request, { params }: Route) {
         }
       });
     } else return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    if (['metrics', 'import', 'company'].includes(resource)) await refreshAlerts(user.id);
+    if (['metrics', 'import', 'company', 'stripe-sync'].includes(resource))
+      await refreshAlerts(user.id);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof StripeReadError)
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: error.code === 'busy' ? 429 : 400 },
+      );
     if (error instanceof PayloadTooLarge)
       return NextResponse.json({ error: 'Request exceeds 600 KB' }, { status: 413 });
     if (error instanceof z.ZodError)
