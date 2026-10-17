@@ -1,3 +1,5 @@
+import { stripeConfiguration, stripeSnapshotSchema } from './stripe';
+import { stripeMetrics } from './stripe-evidence';
 import { db } from './db';
 import { growthSummary, prioritize } from './growth';
 export async function getWorkspace(userId: string) {
@@ -29,12 +31,41 @@ export async function getWorkspace(userId: string) {
     db.report.findMany({ orderBy: { createdAt: 'desc' }, take: 30 }),
     db.chatMessage.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 30 }),
   ]);
-  const metrics = rawMetrics.map((m) => ({
+  const stripeConfig = stripeConfiguration();
+  const snapshots = stripeConfig.scopeId
+    ? (
+        await db.stripeSnapshot.findMany({
+          where: { scopeId: stripeConfig.scopeId },
+          orderBy: { date: 'asc' },
+        })
+      ).map((row) => stripeSnapshotSchema.parse(row.data))
+    : [];
+  const billingMetrics = stripeMetrics(snapshots);
+  const manualMetrics = rawMetrics.map((m) => ({
     ...m,
     date: m.date.toISOString().slice(0, 10),
     mrr: Number(m.mrr),
     spend: Number(m.spend),
   }));
+  // Once scoped Stripe evidence exists, do not blend demo counts or manual flow definitions into its forecast.
+  const metrics = billingMetrics.length ? billingMetrics : manualMetrics;
+  const latestBilling = snapshots.at(-1);
+  const billingSummary = latestBilling
+    ? {
+        grossMrr: latestBilling.grossMrr,
+        paidInvoiceAmountMonthToDate: latestBilling.paidInvoiceAmountMonthToDate,
+        paidInvoicesMonthToDate: latestBilling.paidInvoicesMonthToDate,
+        activeSubscriptions: latestBilling.activeSubscriptions,
+        trialingSubscriptions: latestBilling.trialingSubscriptions,
+        pastDueSubscriptions: latestBilling.pastDueSubscriptions,
+        warnings: latestBilling.warnings,
+      }
+    : null;
+  const stripe = {
+    ...stripeConfig,
+    lastSync: latestBilling?.capturedAt ?? null,
+    summary: billingSummary,
+  };
   const goal = {
     ...company,
     goalStartDate: company.goalStartDate.toISOString().slice(0, 10),
@@ -66,6 +97,7 @@ export async function getWorkspace(userId: string) {
   });
   return {
     company: goal,
+    stripe,
     metrics,
     channels,
     experiments,

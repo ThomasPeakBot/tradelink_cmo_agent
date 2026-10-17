@@ -1,11 +1,12 @@
 export type Metric = {
+  source?: string;
   date: string;
   subscribers: number;
-  newSubs: number;
-  churned: number;
-  visitors: number;
-  mrr: number;
-  spend: number;
+  newSubs: number | null;
+  churned: number | null;
+  visitors: number | null;
+  mrr: number | null;
+  spend: number | null;
   isDemo: boolean;
 };
 export type Goal = {
@@ -40,8 +41,9 @@ export function growthSummary(goal: Goal, metrics: Metric[], now = new Date()) {
           (utcDay(recent.at(-1)!.date).getTime() - utcDay(recent[0].date).getTime()) / dayMs + 1,
         )
       : recent.length;
-  const averageNet = recent.length
-    ? recent.reduce((a, m) => a + m.newSubs - m.churned, 0) / recent.length
+  const flow = recent.filter((m) => m.newSubs !== null && m.churned !== null);
+  const averageNet = flow.length
+    ? flow.reduce((a, m) => a + m.newSubs! - m.churned!, 0) / flow.length
     : 0;
   const remainingDays = Math.max(
     0,
@@ -52,7 +54,7 @@ export function growthSummary(goal: Goal, metrics: Metric[], now = new Date()) {
     ? Math.round((utcDay(now).getTime() - utcDay(latest.date).getTime()) / dayMs)
     : null;
   const project = (factor: number) =>
-    current === null
+    current === null || !flow.length
       ? null
       : Math.max(0, Math.round(current + averageNet * factor * remainingDays));
   return {
@@ -71,7 +73,7 @@ export function growthSummary(goal: Goal, metrics: Metric[], now = new Date()) {
           : 0,
     latest,
     dataAgeDays,
-    sampleDays: recent.length,
+    sampleDays: flow.length,
     sampleSpan: span,
     forecasts: { downside: project(0.65), base: project(1), upside: project(1.35) },
     trajectory: Array.from({ length: 13 }, (_, month) => {

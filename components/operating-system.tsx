@@ -111,12 +111,14 @@ const descriptions: Record<Tab, string> = {
 };
 const number = (value: number | null | undefined) =>
   value == null ? '—' : Math.round(value).toLocaleString();
-const money = (value: number) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(value);
+const money = (value: number | null) =>
+  value === null
+    ? '—'
+    : new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+      }).format(value);
 const dateLabel = (date: string) =>
   new Date(date).toLocaleDateString('en-US', {
     month: 'short',
@@ -565,11 +567,19 @@ export function OperatingSystem() {
           <div className="demo-banner">
             <span>
               <Database size={16} />
-              <strong>{hasDemoContext(data) ? 'Demo workspace' : 'Manual data workspace'}</strong>
+              <strong>
+                {hasDemoContext(data)
+                  ? 'Demo workspace'
+                  : data.stripe.lastSync
+                    ? 'Stripe snapshot workspace'
+                    : 'Manual data workspace'}
+              </strong>
               <span>
                 {hasDemoContext(data)
                   ? 'Sample records are labeled DEMO. Replace assumptions before making business decisions.'
-                  : 'All data is entered by your team. No live integrations are connected.'}
+                  : data.stripe.lastSync
+                    ? 'Uses stored Stripe snapshots. Sync manually in Settings; other inputs may be manual.'
+                    : 'Manual observations. Stripe has not been synced.'}
               </span>
             </span>
             <Badge tone="demo">{data.provider}</Badge>
@@ -587,7 +597,7 @@ export function OperatingSystem() {
                   value={number(s.current)}
                   detail={
                     s.latest
-                      ? `As of ${dateLabel(s.latest.date)} · ${s.latest.isDemo ? 'demo' : 'manual'}`
+                      ? `As of ${dateLabel(s.latest.date)} · ${s.latest.isDemo ? 'demo' : s.latest.source}`
                       : 'No observations yet'
                   }
                   icon={Target}
@@ -604,9 +614,17 @@ export function OperatingSystem() {
                   icon={s.status === 'AHEAD' ? ArrowUpRight : ArrowDownRight}
                 />
                 <Stat
-                  label="MONTHLY RECURRING REVENUE"
+                  label={
+                    s.latest?.source === 'stripe'
+                      ? 'GROSS MONTHLY RECURRING REVENUE'
+                      : 'MONTHLY RECURRING REVENUE'
+                  }
                   value={s.latest ? money(s.latest.mrr) : '—'}
-                  detail="Latest daily observation · USD"
+                  detail={
+                    s.latest?.source === 'stripe'
+                      ? 'USD · before discounts, refunds, credits and fees; tax treatment follows the price'
+                      : 'Latest daily observation · USD'
+                  }
                   icon={Activity}
                 />
                 <Stat
@@ -823,7 +841,9 @@ export function OperatingSystem() {
                     scenarios use a separate linear run-rate model.
                   </p>
                   <p>
-                    Observed net additions average {s.averageNet.toFixed(2)}/day across{' '}
+                    {s.sampleDays
+                      ? `Observed net additions average ${s.averageNet.toFixed(2)}/day across`
+                      : 'Forecast unavailable until comparable daily observations exist. Flow sample:'}{' '}
                     {s.sampleDays} reported dates in the 30-day window ending at the latest
                     observation. Missing dates are excluded; stale or sparse data reduces
                     confidence. Forecast = latest subscribers + observed average × scenario
@@ -953,9 +973,54 @@ export function OperatingSystem() {
                     explicitly select local mode for each generation.
                   </p>
                   <p>
-                    <strong>Data:</strong> Manual entry and validated CSV. Live billing, analytics,
-                    advertising, CRM, and email integrations are not connected. Provider interfaces
-                    are available for future adapters.
+                    <strong>Stripe:</strong>{' '}
+                    {data.stripe.lastSync
+                      ? `Last successful read: ${new Date(data.stripe.lastSync).toLocaleString()}`
+                      : 'Not synced.'}
+                  </p>
+                  <p>
+                    TradeLink product scope:{' '}
+                    {data.stripe.products.join(', ') ||
+                      'Not configured. Set verified STRIPE_PRODUCT_IDS in server settings.'}
+                  </p>
+                  <p>
+                    Counts unique customers with active, unpaused, positive recurring-price
+                    subscriptions. Trials, past-due, and free prices are excluded. Discounts do not
+                    change this count.
+                  </p>
+                  <p>
+                    New and churned are observed customer-set changes between consecutive UTC-date
+                    snapshots, not Stripe lifecycle events. Intra-day changes and missing days
+                    cannot be reconstructed. Manual and demo metric history is retained but excluded
+                    from Stripe forecasts.
+                  </p>
+                  {data.stripe.summary && (
+                    <>
+                      <p>
+                        Gross MRR: {money(data.stripe.summary.grossMrr ?? null)}. Before discounts,
+                        tax, refunds, credits and fees; differs from Stripe net MRR.
+                      </p>
+                      <p>
+                        Month-to-date paid invoice amount:{' '}
+                        {money(data.stripe.summary.paidInvoiceAmountMonthToDate ?? null)} across{' '}
+                        {data.stripe.summary.paidInvoicesMonthToDate} scoped invoices. Includes
+                        taxes and out-of-band payments; excludes refunds, fees and mixed-product
+                        invoices. This is not net revenue or cash reconciliation.
+                      </p>
+                      <p>
+                        Active subscriptions: {data.stripe.summary.activeSubscriptions}; trials:{' '}
+                        {data.stripe.summary.trialingSubscriptions}; past due:{' '}
+                        {data.stripe.summary.pastDueSubscriptions}.
+                      </p>
+                      {data.stripe.summary.warnings?.map((warning) => (
+                        <p key={warning}>{warning}</p>
+                      ))}
+                    </>
+                  )}
+                  <StripeSync configured={data.stripe.configured} mutate={mutate} />
+                  <p>
+                    Read-only Stripe access. No webhook, scheduled job, billing changes, or other
+                    live integration is enabled.
                   </p>
                   <p>
                     <strong>Actions:</strong> No external executor is present in V1. Approved
@@ -1040,7 +1105,7 @@ function Metrics({ data, mutate }: { data: Data; mutate: Mutate }) {
       <Editor
         key={editDate}
         title={m ? 'Update daily observation' : 'Add daily observation'}
-        subtitle="One row per UTC date. Saving an existing date replaces that observation and marks it manual."
+        subtitle="Edits save manual records only. Stripe snapshots are separate and take precedence in the dashboard once synced."
         fields={[
           { name: 'date', label: 'Date (UTC)', type: 'date', value: editDate },
           ...(['subscribers', 'newSubs', 'churned', 'visitors', 'mrr', 'spend'] as const).map(
@@ -1063,7 +1128,7 @@ function Metrics({ data, mutate }: { data: Data; mutate: Mutate }) {
       />
       <Panel
         title="Daily observations"
-        subtitle="Reported counts are independent observations. Reconcile totals and flow metrics with your source systems."
+        subtitle="Stripe rows are read-only snapshots; MRR is gross. Dashes mean unavailable. New/churned are observed changes between consecutive daily snapshots. Manual inputs are retained separately."
       >
         <Table
           headings={[
@@ -1087,18 +1152,18 @@ function Metrics({ data, mutate }: { data: Data; mutate: Mutate }) {
                 <td>
                   <strong>{number(m.subscribers)}</strong>
                 </td>
-                <td className="green-text">+{m.newSubs}</td>
-                <td>{m.churned}</td>
+                <td className="green-text">{m.newSubs === null ? '—' : `+${m.newSubs}`}</td>
+                <td>{number(m.churned)}</td>
                 <td>{number(m.visitors)}</td>
                 <td>{money(m.mrr)}</td>
                 <td>{money(m.spend)}</td>
+                <td>{m.source === 'stripe' ? 'Stripe · gross MRR' : <Demo value={m.isDemo} />}</td>
                 <td>
-                  <Demo value={m.isDemo} />
-                </td>
-                <td>
-                  <button className="text-btn" onClick={() => setEditDate(m.date)}>
-                    Edit
-                  </button>
+                  {m.source !== 'stripe' && (
+                    <button className="text-btn" onClick={() => setEditDate(m.date)}>
+                      Edit
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -1798,6 +1863,39 @@ function CsvImport({ mutate }: { mutate: Mutate }) {
           </p>
         </div>
       </Panel>
+    </>
+  );
+}
+
+function StripeSync({ configured, mutate }: { configured: boolean; mutate: Mutate }) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  return (
+    <>
+      <button
+        className="btn"
+        disabled={!configured || busy}
+        onClick={async () => {
+          setBusy(true);
+          setMessage('');
+          try {
+            await mutate('stripe-sync', {});
+            setMessage('Stripe snapshot saved.');
+          } catch (error) {
+            setMessage(error instanceof Error ? error.message : 'Stripe sync failed.');
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {busy ? 'Reading Stripe…' : 'Sync Stripe read-only'}
+      </button>
+      {!configured && (
+        <p>
+          Requires a restricted live key and verified TradeLink product IDs in server configuration.
+        </p>
+      )}
+      {message && <p role="status">{message}</p>}
     </>
   );
 }
