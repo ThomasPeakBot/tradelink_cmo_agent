@@ -1,3 +1,5 @@
+import { syncSocial } from '@/lib/social-sync';
+import { socialProviderSchema, SocialReadError } from '@/lib/social';
 import { syncStripe } from '@/lib/stripe-sync';
 import { StripeReadError } from '@/lib/stripe';
 import { readJson, PayloadTooLarge } from '@/lib/http';
@@ -61,7 +63,10 @@ export async function POST(request: Request, { params }: Route) {
       entityId: string,
       details: string,
     ) => tx.auditLog.create({ data: { actor: user.email, action, entityType, entityId, details } });
-    if (resource === 'stripe-sync') {
+    if (resource === 'social-sync') {
+      const { provider } = z.object({ provider: socialProviderSchema }).strict().parse(body);
+      await syncSocial(user.email, provider);
+    } else if (resource === 'stripe-sync') {
       await syncStripe(user.email);
     } else if (resource === 'metrics') {
       const input = metricSchema.parse(body);
@@ -301,6 +306,11 @@ export async function POST(request: Request, { params }: Route) {
       await refreshAlerts(user.id);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof SocialReadError)
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: error.code === 'busy' || error.code === 'rate_limit' ? 429 : 400 },
+      );
     if (error instanceof StripeReadError)
       return NextResponse.json(
         { error: error.message, code: error.code },

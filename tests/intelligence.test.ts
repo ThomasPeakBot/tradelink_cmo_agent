@@ -20,6 +20,7 @@ const company = {
 const context: Workspace = {
   stripe: { configured: false, products: [], scopeId: null, lastSync: null, summary: null },
   company,
+  social: [],
   metrics: [],
   channels: [],
   experiments: [],

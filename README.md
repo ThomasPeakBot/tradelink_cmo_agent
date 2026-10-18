@@ -120,3 +120,7 @@ The production dependency audit reports zero known vulnerabilities at implementa
 ## Appearance
 
 Use the **Dark mode / Light mode** button in the workspace header or login page. The first visit follows your device theme; selecting a mode saves it in this browser and keeps it across reloads and login. Theme changes also sync between open tabs. If browser storage is disabled, the toggle still works for the current page.
+
+## Social reporting
+
+Read-only X and Instagram reporting is available under **Channels**, with integration status in **Settings**. It stores scoped daily snapshots and provides evidence to CMO chat and briefs; social engagement never counts as paid-subscriber attribution. See [setup and limitations](docs/SOCIAL.md). Platform credentials and a verified first sync are required before calling either account connected.

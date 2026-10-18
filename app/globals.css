@@ -1832,3 +1832,20 @@ html[data-theme='dark'] .rank {
   background: #294336;
   color: #bfd9c8;
 }
+
+.social-post {
+  min-width: 180px;
+  max-width: 360px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.social-post strong {
+  display: block;
+  max-height: 110px;
+  overflow-y: auto;
+}
+.social-status {
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}

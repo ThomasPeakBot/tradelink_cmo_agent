@@ -27,3 +27,11 @@ After network settings were applied, the Railway-compatible Docker image built s
 ## Railway deployment
 
 Railway's remote production build passed, the application SQL migration and labeled demo seed completed against Railway PostgreSQL, and Next.js started successfully in deployment `b0534d82-a549-40c5-b23b-64bf3af855ec`. The managed service domain is active. Explicit `/api/health` configuration was saved and read back through the Railway API. See `docs/RAILWAY.md` for restart verification, credentials handling, and the distinction between Railway readiness and direct browser verification (the cloud proxy blocks the new public hostname).
+
+## 2026-10-18 — Read-only social reporting
+
+- Lint, TypeScript and production build passed.
+- 69 unit/route tests passed, including seven social adapter tests and three social authorization tests.
+- 10 PostgreSQL integration tests passed against the disposable local `_test` database, including two social snapshot/CMO evidence tests. The new migration adds only `SocialSnapshot`.
+- All 11 browser tests passed in a sequential run, including unconfigured social cards, dark theme and mobile overflow checks. An earlier run alongside build activity had two navigation/theme failures; the clean sequential run passed. Screenshot `test-results/social-dark.png` was visually inspected and is ignored by Git.
+- No live X or Instagram sync was claimed: provider credentials were absent. Expected usernames are `tradelink_pb`; real platform authorization and reconciliation remain required.

@@ -1019,9 +1019,21 @@ export function OperatingSystem() {
                   )}
                   <StripeSync configured={data.stripe.configured} mutate={mutate} />
                   <p>
-                    Read-only Stripe access. No webhook, scheduled job, billing changes, or other
-                    live integration is enabled.
+                    Read-only Stripe access. No webhook, scheduled job or billing changes are
+                    enabled.
                   </p>
+                  <p>
+                    <strong>Social reporting:</strong>{' '}
+                    {data.social
+                      .map(
+                        (c) =>
+                          `${c.label}: ${c.lastSync ? 'last sync ' + new Date(c.lastSync).toLocaleString() : c.configured ? 'configured, not synced' : 'not connected'}`,
+                      )
+                      .join(' · ')}
+                  </p>
+                  <button className="btn" onClick={() => navigate('Channels')}>
+                    Open social reporting
+                  </button>
                   <p>
                     <strong>Actions:</strong> No external executor is present in V1. Approved
                     requests remain unexecuted.
@@ -1175,6 +1187,7 @@ function Metrics({ data, mutate }: { data: Data; mutate: Mutate }) {
 function Channels({ data, mutate }: { data: Data; mutate: Mutate }) {
   return (
     <>
+      <SocialReporting data={data} mutate={mutate} />
       <Panel
         title="Channel performance"
         subtitle="Last 30 calendar days. CAC = recorded spend / attributed subscribers; conversion = subscribers / visitors."
@@ -1896,6 +1909,124 @@ function StripeSync({ configured, mutate }: { configured: boolean; mutate: Mutat
         </p>
       )}
       {message && <p role="status">{message}</p>}
+    </>
+  );
+}
+
+function SocialReporting({ data, mutate }: { data: Data; mutate: Mutate }) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [message, setMessage] = useState('');
+  return (
+    <>
+      <div className="safety-banner">
+        <p>
+          Social reporting is read-only. Followers, views and engagement are not attributed website
+          visitors or paid subscribers. Use tracked links and website analytics to measure
+          conversion. Syncs are manual; no publishing or messaging is available.
+        </p>
+      </div>
+      {message && (
+        <p role="status" className="social-status">
+          {message}
+        </p>
+      )}
+      <div className="two-col">
+        {data.social.map((connection) => {
+          const snapshot = connection.snapshot;
+          const history = connection.history;
+          const first = history[0];
+          const last = history.at(-1);
+          const movement =
+            history.length > 1 && first?.followers !== null && last?.followers !== null
+              ? last!.followers! - first!.followers!
+              : null;
+          return (
+            <Panel
+              key={connection.provider}
+              title={`${connection.label} reporting`}
+              subtitle={
+                snapshot
+                  ? `@${snapshot.username} · Live API snapshot · ${new Date(snapshot.capturedAt).toLocaleString()}`
+                  : 'Not connected — no successful sync yet.'
+              }
+            >
+              <div className="record-body">
+                <p>
+                  {connection.configured
+                    ? 'Credentials configured; verify the account and sync result below.'
+                    : 'Add the account access token and numeric user ID in Railway to connect.'}
+                </p>
+                <button
+                  className="btn primary"
+                  disabled={!connection.configured || busy !== null}
+                  onClick={async () => {
+                    setBusy(connection.provider);
+                    setMessage('');
+                    try {
+                      await mutate('social-sync', { provider: connection.provider });
+                      setMessage(`${connection.label} snapshot saved.`);
+                    } catch (error) {
+                      setMessage(error instanceof Error ? error.message : 'Social sync failed.');
+                    } finally {
+                      setBusy(null);
+                    }
+                  }}
+                >
+                  {busy === connection.provider
+                    ? 'Reading account…'
+                    : `Sync ${connection.label} read-only`}
+                </button>
+                {snapshot && (
+                  <>
+                    <p>
+                      <strong>{number(snapshot.followers)}</strong> followers ·{' '}
+                      <strong>{number(snapshot.totalPosts)}</strong> total account posts
+                    </p>
+                    {movement !== null && (
+                      <p>
+                        Observed follower change: {movement >= 0 ? '+' : ''}
+                        {number(movement)} between{' '}
+                        {new Date(first!.capturedAt).toLocaleDateString()} and{' '}
+                        {new Date(last!.capturedAt).toLocaleDateString()}. Not a daily rate.
+                      </p>
+                    )}
+                    {connection.isStale && (
+                      <p className="badge amber">Snapshot is over 24 hours old. Sync to refresh.</p>
+                    )}
+                    {snapshot.notes.map((note) => (
+                      <p key={note}>{note}</p>
+                    ))}
+                  </>
+                )}
+              </div>
+              {snapshot && (
+                <Table headings={['Post / UTC date', 'Likes', 'Comments', 'Shares', 'Views']}>
+                  {snapshot.posts.length ? (
+                    snapshot.posts.map((post) => (
+                      <tr key={post.id}>
+                        <td className="social-post">
+                          <strong>{post.text || '(No caption)'}</strong>
+                          <small className="block">
+                            {post.publishedAt.slice(0, 10)} · ID {post.id}
+                          </small>
+                        </td>
+                        <td>{number(post.likes)}</td>
+                        <td>{number(post.comments)}</td>
+                        <td>{number(post.shares)}</td>
+                        <td>{number(post.views)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5}>No posts returned by the API.</td>
+                    </tr>
+                  )}
+                </Table>
+              )}
+            </Panel>
+          );
+        })}
+      </div>
     </>
   );
 }

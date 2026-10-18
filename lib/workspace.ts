@@ -1,3 +1,4 @@
+import { socialConfiguration, socialSnapshotSchema } from './social';
 import { stripeConfiguration, stripeSnapshotSchema } from './stripe';
 import { stripeMetrics } from './stripe-evidence';
 import { db } from './db';
@@ -31,6 +32,32 @@ export async function getWorkspace(userId: string) {
     db.report.findMany({ orderBy: { createdAt: 'desc' }, take: 30 }),
     db.chatMessage.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 30 }),
   ]);
+  const social = await Promise.all(
+    (['x', 'instagram'] as const).map(async (provider) => {
+      const config = socialConfiguration(provider);
+      const rows = config.accountId
+        ? await db.socialSnapshot.findMany({
+            where: { provider, accountId: config.accountId },
+            orderBy: { date: 'desc' },
+            take: 30,
+          })
+        : [];
+      const latest = rows[0] ? socialSnapshotSchema.parse(rows[0].data) : null;
+      return {
+        ...config,
+        lastSync: latest?.capturedAt ?? null,
+        isStale: latest ? Date.now() - Date.parse(latest.capturedAt) > 86400000 : false,
+        snapshot: latest,
+        history: rows
+          .slice()
+          .reverse()
+          .map((row) => {
+            const item = socialSnapshotSchema.parse(row.data);
+            return { capturedAt: item.capturedAt, followers: item.followers };
+          }),
+      };
+    }),
+  );
   const stripeConfig = stripeConfiguration();
   const snapshots = stripeConfig.scopeId
     ? (
@@ -98,6 +125,7 @@ export async function getWorkspace(userId: string) {
   return {
     company: goal,
     stripe,
+    social,
     metrics,
     channels,
     experiments,

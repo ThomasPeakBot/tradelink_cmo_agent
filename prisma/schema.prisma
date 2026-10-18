@@ -185,3 +185,15 @@ model StripeSnapshot {
 
   @@unique([scopeId, date])
 }
+
+// Public/authorized aggregate social reporting only; credentials stay in Railway.
+model SocialSnapshot {
+  id         String   @id @default(cuid())
+  provider   String
+  accountId  String
+  date       DateTime @db.Date
+  capturedAt DateTime
+  data       Json
+
+  @@unique([provider, accountId, date])
+}
