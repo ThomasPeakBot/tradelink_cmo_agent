@@ -1,3 +1,4 @@
+import { xAdsConfiguration, xAdsSnapshotSchema } from './x-ads';
 import { easternSchedule } from './sync-state';
 import { z } from 'zod';
 import { syncResultsSchema } from './sync-state';
@@ -36,6 +37,24 @@ export async function getWorkspace(userId: string) {
     db.report.findMany({ orderBy: { createdAt: 'desc' }, take: 30 }),
     db.chatMessage.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 30 }),
   ]);
+  const adsConfig = xAdsConfiguration();
+  const adsRow = adsConfig.accountId
+    ? await db.xAdsSnapshot.findFirst({
+        where: { accountId: adsConfig.accountId },
+        orderBy: { capturedAt: 'desc' },
+      })
+    : null;
+  const adsSnapshot = adsRow ? xAdsSnapshotSchema.parse(adsRow.data) : null;
+  const xAds = {
+    ...adsConfig,
+    connected: adsConfig.configured && !!adsSnapshot,
+    snapshot: adsSnapshot,
+    lastSync: adsSnapshot?.capturedAt ?? null,
+    isStale: !!adsSnapshot && Date.now() - Date.parse(adsSnapshot.capturedAt) > 86400000,
+    note: adsSnapshot
+      ? 'Stored read-only paid X reporting; check timestamps and scope before decisions.'
+      : 'No paid X reporting has been synced. Organic X metrics are separate.',
+  };
   const todayDate = easternSchedule().day;
   const plans = await db.dailyPlan.findMany({
     orderBy: { date: 'desc' },
@@ -178,11 +197,7 @@ export async function getWorkspace(userId: string) {
   });
   return {
     company: goal,
-    xAds: {
-      accountId: process.env.X_ADS_ACCOUNT_ID || null,
-      connected: false,
-      note: 'Paid X Ads reporting is not connected. Organic X metrics are not advertising performance.',
-    },
+    xAds,
     today,
     syncHistory,
     stripe,

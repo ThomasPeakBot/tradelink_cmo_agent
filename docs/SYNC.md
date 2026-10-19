@@ -1,6 +1,6 @@
 # Manual and daily read-only sync
 
-The workspace header's **Sync all** button fetches fresh data from configured Stripe, X, Instagram and Drive adapters. The existing refresh icon only reloads stored workspace data; per-provider buttons remain available. Settings → Sync schedule & history shows the last five full runs and each provider's result. Unconfigured providers are skipped. Failures do not prevent other providers from running, and provider snapshot retention rules remain in force (Drive pauses direct retrieval after a failed scan).
+The workspace header's **Sync all** button fetches fresh data from configured Stripe, organic X, paid X Ads, Instagram and Drive adapters. The existing refresh icon only reloads stored workspace data; per-provider buttons remain available. Settings → Sync schedule & history shows the last five full runs and each provider's result. Unconfigured providers are skipped. Failures do not prevent other providers from running, and provider snapshot retention rules remain in force (Drive pauses direct retrieval after a failed scan).
 
 ## Daily schedule
 
@@ -17,7 +17,7 @@ The trigger uses the isolated `cron/` build context (`railway up cron --path-as-
 
 A PostgreSQL session advisory lock prevents overlapping full runs across replicas. A unique `SyncRun.scheduledDay` key deduplicates the Eastern date. Each provider's sanitized result is saved as it finishes. An orphaned scheduled RUNNING row may resume after its process releases the lock, without repeating already recorded providers. Other abandoned full-run rows are marked INTERRUPTED when a new full run acquires the lock. A process loss between provider snapshot commit and result recording can still cause a provider re-read on recovery; this is not distributed exactly-once execution. Existing durable per-provider cooldowns also apply to standalone buttons.
 
-Providers execute sequentially, preserving their own scopes, deadlines and failure behavior. Scheduled reads make no external changes, generate no OpenAI reports, publish nothing and spend no advertising budget. Provider API usage can consume existing credits. Growth alerts refresh after the imports. Sync history and a completion audit contain statuses and sanitized messages, never keys or raw upstream errors. Cron returns HTTP 503 for failed/partial runs so Railway logs report failure rather than a false healthy import. Past successful provider snapshots are retained according to their adapter policies.
+The trigger allows eight minutes for the expanded provider set. Providers execute sequentially, preserving their own scopes, deadlines and failure behavior. Scheduled reads make no external changes, generate no OpenAI reports, publish nothing and spend no advertising budget. Provider API usage can consume existing credits. Growth alerts refresh after the imports. Sync history and a completion audit contain statuses and sanitized messages, never keys or raw upstream errors. Cron returns HTTP 503 for failed/partial runs so Railway logs report failure rather than a false healthy import. Past successful provider snapshots are retained according to their adapter policies.
 
 ## Validation
 

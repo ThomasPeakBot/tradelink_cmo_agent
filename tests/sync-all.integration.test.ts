@@ -1,5 +1,8 @@
+vi.mock('../lib/x-ads-sync', () => ({ syncXAds: mocks.ads }));
+vi.mock('../lib/x-ads', () => ({ xAdsConfiguration: () => ({ configured: true }) }));
 import { afterAll, afterEach, beforeEach, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
+  ads: vi.fn(),
   stripe: vi.fn(),
   social: vi.fn(),
   drive: vi.fn(),
@@ -43,6 +46,7 @@ it('isolates provider failures, skips absent credentials, and deduplicates a sch
     ]),
   );
   expect(mocks.social).toHaveBeenCalledTimes(2);
+  expect(mocks.ads).toHaveBeenCalledWith(actor);
   expect(mocks.drive).not.toHaveBeenCalled();
   expect(JSON.stringify(result)).not.toContain('private token value');
   await syncAll(actor, 'SCHEDULED', new Date('2026-07-01T09:00:00Z'));

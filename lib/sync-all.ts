@@ -1,3 +1,5 @@
+import { syncXAds } from './x-ads-sync';
+import { xAdsConfiguration } from './x-ads';
 import { Client } from 'pg';
 import { db } from './db';
 import { syncStripe } from './stripe-sync';
@@ -56,6 +58,11 @@ export async function syncAll(actor: string, trigger: 'MANUAL' | 'SCHEDULED', no
       }));
     const results = syncResultsSchema.parse(run.results);
     const tasks = [
+      {
+        provider: 'x_ads' as const,
+        configured: xAdsConfiguration().configured,
+        execute: () => syncXAds(actor),
+      },
       {
         provider: 'stripe' as const,
         configured: stripeConfiguration().configured,

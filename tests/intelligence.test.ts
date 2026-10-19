@@ -21,7 +21,15 @@ const context: Workspace = {
   stripe: { configured: false, products: [], scopeId: null, lastSync: null, summary: null },
   company,
   social: [],
-  xAds: { accountId: null, connected: false, note: 'Not connected' },
+  xAds: {
+    accountId: null,
+    connected: false,
+    configured: false,
+    snapshot: null,
+    lastSync: null,
+    isStale: false,
+    note: 'Not connected',
+  },
   syncHistory: [],
   today: { date: '2026-10-18', current: null, history: [] },
   drive: {

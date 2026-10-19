@@ -40,7 +40,19 @@ export function companyEvidence(w: Workspace, prompt: string) {
       })),
     })),
     billing: w.stripe,
-    paidXAdvertising: w.xAds,
+    paidXAdvertising: {
+      ...w.xAds,
+      snapshot: w.xAds.snapshot
+        ? {
+            ...w.xAds.snapshot,
+            campaigns: w.xAds.snapshot.campaigns
+              .slice()
+              .sort((a, b) => (b.spend ?? 0) - (a.spend ?? 0))
+              .slice(0, 30),
+            campaignLimit: 'Top 30 campaigns by spend; totals include all fetched campaigns.',
+          }
+        : null,
+    },
     socialReporting: w.social.map((c) => ({
       ...c,
       snapshot: c.snapshot
@@ -132,7 +144,7 @@ export class LocalIntelligenceProvider implements IntelligenceProvider {
         : '';
     return {
       provider: 'local-evidence',
-      content: `# ${type === 'CHAT' ? 'CMO evidence response' : type === 'DAILY' ? 'Daily Growth Brief' : type === 'WEEKLY' ? 'Weekly CMO Review' : 'Monthly Growth Plan'}\n\nLOCAL EVIDENCE MODE · ${includesDemo ? 'Includes DEMO data. Do not use as real business performance.' : w.stripe.lastSync ? 'Uses stored Stripe snapshots and other supplied evidence.' : 'Uses stored manual data.'}${requested}\n\n## Pace to ${goal}\n${pace}\n\n## Highest-priority growth actions\n${actions}\n\n## Channel evidence (last 30 calendar days)\n${channels}\n\n## Stored Stripe billing evidence\n${billingEvidence}\n\n## Billing definitions\n${w.stripe.lastSync ? 'Stripe subscribers are unique customers with active, unpaused, positive recurring-price subscriptions, before discounts. Gross MRR is before discounts, refunds, credits and fees; inclusive-tax prices may include tax. Paid invoice amount is not net revenue. New/churned are observed set changes between consecutive UTC-date snapshots, not lifecycle events. Missing dates and intra-day changes are not reconstructed.' : 'No Stripe snapshot available.'}\n\n## Forecast and assumptions\n${forecast}\n\n## Social reporting\n${w.social.map((c) => (c.snapshot ? `${c.label} @${c.snapshot.username}: ${c.snapshot.followers ?? 'unavailable'} followers, ${c.snapshot.posts.length} sampled posts. Captured ${c.lastSync}. ${c.snapshot.notes.join(' ')}` : `${c.label}: no successful social sync.`)).join('\n')}\n\n## Company knowledge\n${facts}\n\n## Drive reference documents\n${
+      content: `# ${type === 'CHAT' ? 'CMO evidence response' : type === 'DAILY' ? 'Daily Growth Brief' : type === 'WEEKLY' ? 'Weekly CMO Review' : 'Monthly Growth Plan'}\n\nLOCAL EVIDENCE MODE · ${includesDemo ? 'Includes DEMO data. Do not use as real business performance.' : w.stripe.lastSync ? 'Uses stored Stripe snapshots and other supplied evidence.' : 'Uses stored manual data.'}${requested}\n\n## Pace to ${goal}\n${pace}\n\n## Highest-priority growth actions\n${actions}\n\n## Channel evidence (last 30 calendar days)\n${channels}\n\n## Stored Stripe billing evidence\n${billingEvidence}\n\n## Billing definitions\n${w.stripe.lastSync ? 'Stripe subscribers are unique customers with active, unpaused, positive recurring-price subscriptions, before discounts. Gross MRR is before discounts, refunds, credits and fees; inclusive-tax prices may include tax. Paid invoice amount is not net revenue. New/churned are observed set changes between consecutive UTC-date snapshots, not lifecycle events. Missing dates and intra-day changes are not reconstructed.' : 'No Stripe snapshot available.'}\n\n## Forecast and assumptions\n${forecast}\n\n## Social reporting\n${w.social.map((c) => (c.snapshot ? `${c.label} @${c.snapshot.username}: ${c.snapshot.followers ?? 'unavailable'} followers, ${c.snapshot.posts.length} sampled posts. Captured ${c.lastSync}. ${c.snapshot.notes.join(' ')}` : `${c.label}: no successful social sync.`)).join('\n')}\n\n## Paid X advertising\n${w.xAds.snapshot ? `Stored ${w.xAds.snapshot.startTime} to ${w.xAds.snapshot.endTime}: spend ${w.xAds.snapshot.totals.spend ?? 'unavailable'} ${w.xAds.snapshot.currency ?? 'currency unknown'}, impressions ${w.xAds.snapshot.totals.impressions ?? 'unavailable'}, URL clicks ${w.xAds.snapshot.totals.urlClicks ?? 'unavailable'}. Captured ${w.xAds.lastSync}. ${w.xAds.snapshot.notes.join(' ')}` : 'No paid X reporting snapshot. Organic reporting is separate.'}\n\n## Company knowledge\n${facts}\n\n## Drive reference documents\n${
         driveEvidence(w.drive, prompt)
           .documents.map(
             (d) =>

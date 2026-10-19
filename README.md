@@ -136,3 +136,5 @@ Use **Sync all** in the header to fetch fresh provider data; the refresh icon on
 ## Daily work planning
 
 **Today** turns stored evidence into three reviewable tasks within a 4–5 hour budget. Approve, edit, defer and record outcomes; an end-of-day check-in saves learning for tomorrow. Plans and progress persist in PostgreSQL, with no autonomous external actions. See [workflow and limitations](docs/TODAY.md). Paid X Ads reporting remains separate from the connected organic X provider.
+
+Paid X reporting setup and scope: [docs/X_ADS.md](docs/X_ADS.md).

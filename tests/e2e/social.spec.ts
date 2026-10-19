@@ -21,6 +21,13 @@ test('social reporting distinguishes unconfigured accounts and does not imply pa
   await expect(
     page.getByText('Not connected — no successful sync yet.', { exact: true }),
   ).toHaveCount(2);
+  await expect(
+    page.getByRole('heading', { name: 'X paid advertising', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Sync X Ads read-only', exact: true }),
+  ).toBeDisabled();
+  await expect(page.getByText(/Authorization required: add dedicated X Ads/)).toBeVisible();
   await page.screenshot({ path: 'test-results/social-dark.png', fullPage: true, caret: 'initial' });
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

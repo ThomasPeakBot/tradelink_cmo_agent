@@ -1226,16 +1226,7 @@ function Channels({ data, mutate }: { data: Data; mutate: Mutate }) {
   return (
     <>
       <SocialReporting data={data} mutate={mutate} />
-      <Panel title="X paid advertising" subtitle="Separate from organic X reporting">
-        <div className="record-body">
-          <p>{data.xAds.note}</p>
-          <p>
-            Advertiser account: {data.xAds.accountId || 'Not configured'}. A dedicated read-only X
-            Ads API connection requires approved developer access, advertiser-account permission and
-            user-context OAuth credentials. No ad campaigns are modified by this app.
-          </p>
-        </div>
-      </Panel>
+      <XAdsReporting data={data} mutate={mutate} />
       <Panel
         title="Channel performance"
         subtitle="Last 30 calendar days. CAC = recorded spend / attributed subscribers; conversion = subscribers / visitors."
@@ -1971,7 +1962,8 @@ function SocialReporting({ data, mutate }: { data: Data; mutate: Mutate }) {
         <p>
           Social reporting is read-only. Followers, views and engagement are not attributed website
           visitors or paid subscribers. Use tracked links and website analytics to measure
-          conversion. Syncs are manual; no publishing or messaging is available.
+          conversion. Use Sync all or the daily 4 a.m. Eastern sync. No publishing or messaging is
+          available.
         </p>
       </div>
       {message && (
@@ -2205,5 +2197,107 @@ function SyncAllButton({ mutate }: { mutate: Mutate }) {
         </div>
       )}
     </div>
+  );
+}
+
+function XAdsReporting({ data, mutate }: { data: Data; mutate: Mutate }) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const connection = data.xAds,
+    snapshot = connection.snapshot;
+  const money = (value: number | null) =>
+    value === null
+      ? 'Unavailable'
+      : snapshot?.currency
+        ? new Intl.NumberFormat(undefined, {
+            style: 'currency',
+            currency: snapshot.currency,
+          }).format(value)
+        : `${value.toFixed(2)} (currency unavailable)`;
+  const ratio = (numerator: number | null, denominator: number | null, scale = 1) =>
+    numerator === null || denominator === null || denominator === 0
+      ? null
+      : (numerator / denominator) * scale;
+  return (
+    <Panel title="X paid advertising" subtitle="Read-only reporting · separate from organic X">
+      <div className="record-body">
+        <p>
+          Advertiser account: {connection.accountId || 'Not configured'}. {connection.note}
+        </p>
+        <p>
+          {connection.configured
+            ? 'OAuth credentials configured. Sync to verify Ads API access.'
+            : 'Authorization required: add dedicated X Ads user-context OAuth credentials in Railway. Your organic X token is separate.'}
+        </p>
+        <button
+          className="btn primary"
+          disabled={!connection.configured || busy}
+          onClick={async () => {
+            setBusy(true);
+            setMessage('');
+            try {
+              await mutate('x-ads-sync', {});
+              setMessage('Paid X snapshot saved.');
+            } catch (error) {
+              setMessage(error instanceof Error ? error.message : 'X Ads sync failed.');
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? 'Reading paid reporting…' : 'Sync X Ads read-only'}
+        </button>
+        {message && <p role="status">{message}</p>}
+        {snapshot && (
+          <>
+            <p>
+              <strong>{snapshot.accountName}</strong> · {snapshot.startTime.slice(0, 10)} through{' '}
+              {snapshot.endTime.slice(0, 10)} (exclusive), UTC · Captured{' '}
+              {new Date(snapshot.capturedAt).toLocaleString()} · Account timezone:{' '}
+              {snapshot.timezone}
+            </p>
+            {connection.isStale && <p className="badge amber">Snapshot is over 24 hours old.</p>}
+            {!connection.configured && (
+              <p className="badge amber">
+                Credentials unavailable. Showing previously stored data.
+              </p>
+            )}
+            <p>
+              Spend: <strong>{money(snapshot.totals.spend)}</strong> · Impressions:{' '}
+              {number(snapshot.totals.impressions)} · Clicks (all): {number(snapshot.totals.clicks)}{' '}
+              · URL clicks: {number(snapshot.totals.urlClicks)} · Engagements:{' '}
+              {number(snapshot.totals.engagements)}
+            </p>
+            <p>
+              URL CTR:{' '}
+              {ratio(snapshot.totals.urlClicks, snapshot.totals.impressions, 100) === null
+                ? 'Unavailable'
+                : `${ratio(snapshot.totals.urlClicks, snapshot.totals.impressions, 100)!.toFixed(2)}%`}{' '}
+              · Cost per URL click: {money(ratio(snapshot.totals.spend, snapshot.totals.urlClicks))}{' '}
+              · CPM: {money(ratio(snapshot.totals.spend, snapshot.totals.impressions, 1000))}
+            </p>
+            {snapshot.notes.map((note) => (
+              <p key={note}>{note}</p>
+            ))}
+          </>
+        )}
+      </div>
+      {snapshot && (
+        <Table
+          headings={['Campaign', 'Status', 'Spend', 'Impressions', 'All clicks', 'URL clicks']}
+        >
+          {snapshot.campaigns.map((c) => (
+            <tr key={c.id}>
+              <td>{c.name}</td>
+              <td>{c.status}</td>
+              <td>{money(c.spend)}</td>
+              <td>{number(c.impressions)}</td>
+              <td>{number(c.clicks)}</td>
+              <td>{number(c.urlClicks)}</td>
+            </tr>
+          ))}
+        </Table>
+      )}
+    </Panel>
   );
 }

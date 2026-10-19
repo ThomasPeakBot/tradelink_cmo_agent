@@ -25,6 +25,7 @@ export function evidenceIds(w: Workspace) {
     'workspace',
     'growth',
     'stripe',
+    ...(w.xAds.snapshot ? ['x_ads'] : []),
     ...w.experiments.map((x) => `experiment:${x.id}`),
     ...w.knowledge.map((x) => `knowledge:${x.id}`),
     ...w.memories.map((x) => `memory:${x.id}`),

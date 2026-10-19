@@ -10,7 +10,7 @@ try {
     method: 'POST',
     redirect: 'error',
     headers: { Authorization: `Bearer ${secret}` },
-    signal: AbortSignal.timeout(360000),
+    signal: AbortSignal.timeout(480000),
   });
   const result = await response.json();
   console.log(

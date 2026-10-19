@@ -1,3 +1,5 @@
+import { syncXAds } from '@/lib/x-ads-sync';
+import { XAdsReadError } from '@/lib/x-ads';
 import { todayAction, TodayError } from '@/lib/today-actions';
 import { syncAll, SyncBusyError } from '@/lib/sync-all';
 import { syncDrive } from '@/lib/drive-sync';
@@ -72,6 +74,9 @@ export async function POST(request: Request, { params }: Route) {
     } else if (resource === 'sync-all') {
       z.object({}).strict().parse(body);
       return NextResponse.json(await syncAll(user.email, 'MANUAL'));
+    } else if (resource === 'x-ads-sync') {
+      z.object({}).strict().parse(body);
+      await syncXAds(user.email);
     } else if (resource === 'drive-sync') {
       z.object({}).strict().parse(body);
       await syncDrive(user.email);
@@ -318,6 +323,11 @@ export async function POST(request: Request, { params }: Route) {
       await refreshAlerts(user.id);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof XAdsReadError)
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: error.code === 'busy' ? 429 : 400 },
+      );
     if (error instanceof TodayError)
       return NextResponse.json({ error: error.message }, { status: 400 });
     if (error instanceof SyncBusyError)

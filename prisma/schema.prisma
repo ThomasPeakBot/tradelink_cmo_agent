@@ -267,3 +267,13 @@ model TodayTask {
 
   @@unique([planId,position])
 }
+
+// Aggregate paid reporting, never credentials or ad-management permissions.
+model XAdsSnapshot {
+  id String @id @default(cuid())
+  accountId String
+  date DateTime @db.Date
+  capturedAt DateTime
+  data Json
+  @@unique([accountId,date])
+}
