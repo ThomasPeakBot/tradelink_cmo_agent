@@ -1,0 +1,182 @@
+# TradeLink affiliate recruitment — definitive owner copy, October 19, 2026
+
+Authority: the owner supplied this complete sequence as their final version after the review. It supersedes the earlier mixed working draft and assistant-proposed alternatives for outreach wording. Preserve the paired email/DM cadence on Days 1, 4, 8, 13 and 20, plus the once-only contact-form fallback.
+
+One mechanical correction: the malformed email-two hyperlink target ending in `%E2%80%9D` was normalized to `https://peakbot.com/tradelink-affiliate/`. The original uploaded text is retained separately in the repository. Message wording is otherwise unchanged; Markdown formatting may be normalized.
+
+This is final editorial copy, not authorization to send, schedule, enroll prospects or approve the separate enrolled-affiliate automation. Sender identity in these messages is Dillon. The exact commission treatment of discounted month one, official competition status/scoring and free-access duration/fulfillment remain unverified. No conversion results have been supplied. Do not promote those unverified details to established operating policy simply because this copy is final.
+
+## Final supplied sequence
+
+TradeLink B2B Affiliate Outreach Campaign
+Futures Creator & Community Affiliate Campaign
+
+Recommended Cadence
+
+- Day 1: Email 1 + Social DM 1
+- Day 4: Email 2 + Social DM 2
+- Day 8: Email 3 + Social DM 3
+- Day 13: Email 4 + Social DM 4
+- Day 20: Email 5 + Social DM 5
+- Website contact form: Use once when no direct email or social contact is available
+
+Email Sequence
+Suggested timing: Day 1
+Subject: New recurring revenue opportunity for your futures audience
+
+Hey [First Name],
+
+I’m Dillon, co-founder of PeakBot. We built TradeLink for futures traders managing multiple prop-firm accounts.
+
+With TradeLink, traders can place a trade in one account and automatically copy it across up to 150 accounts, all for $40 per month, with unlimited prop-firm connections.
+
+We’re inviting futures creators and communities to become affiliate partners:
+
+- You earn 40% recurring commission, $16 per active subscriber per month 
+- Your audience gets 40% off their first month
+
+Take a look: [https://usetradelink.com](https://usetradelink.com)
+
+If you’re interested in more details, reply ‘yes’ and we’ll send them over. 
+
+Thanks,
+Dillon
+Co-Founder, PeakBot
+
+Suggested timing: Day 1
+
+Hey [First Name]! I’m Dillon, co-founder of PeakBot. We built TradeLink to help futures traders copy trades across multiple prop-firm accounts.
+
+We’re inviting creators and communities to earn 40% recurring commission, with 40% off the first month for their audience.
+
+Would you be open to checking out the affiliate program?
+
+[https://usetradelink.com](https://usetradelink.com) 
+
+Suggested timing: Day 4
+Subject: Do your followers trade multiple prop accounts?
+
+Hey [First Name],
+
+If your audience trades across multiple prop-firm accounts, TradeLink could be a good fit for them.
+
+Traders place a trade in one prop account, and TradeLink automatically copies it across their connected accounts, reducing the need to repeat orders manually.
+
+As a TradeLink affiliate:
+
+- You earn 40% recurring commission, $16 per active subscriber per month 
+- Your audience gets 40% off their first month
+
+There’s also a $10,000 cash bonus for the top affiliate. 
+See the affiliate program details and $10,000 competition rules here: [https://peakbot.com/tradelink-affiliate/](https://peakbot.com/tradelink-affiliate/)
+Dillon
+Co-Founder, PeakBot
+Suggested timing: Day 4
+
+Hey [First Name], just following up on TradeLink.
+
+It helps futures traders place a trade in one account and automatically copy it across their other connected prop accounts.
+
+Your audience gets 40% off their first month, and you earn 40% recurring commission.
+
+There’s also a $10,000 cash bonus for the top affiliate.
+
+Want me to send over the details?
+
+Suggested timing: Day 8
+Subject: $10,000 bonus for our top TradeLink partner
+
+Hey [First Name],
+
+We’re inviting futures traders and communities to become TradeLink affiliate partners.
+
+There’s a $10,000 cash bonus for the top affiliate.
+
+That’s in addition to 40% recurring commission ($16 per active subscriber per month).
+
+Your audience also gets 40% off their first month.
+
+Want to try TradeLink for free before becoming an affiliate? Email us back with a “yes”.
+
+Dillon
+Suggested timing: Day 8
+
+Have you considered becoming a TradeLink affiliate? Reply “yes” to try TradeLink for free.
+
+Suggested timing: Day 13
+Subject: What 100 TradeLink referrals could be worth
+
+Hey [First Name],
+
+Here’s what TradeLink’s recurring affiliate commission looks like in numbers.
+
+At $16 per active subscriber per month at the standard subscription price:
+
+- 25 active subscribers = $400/month
+- 50 active subscribers = $800/month
+- 100 active subscribers = $1,600/month
+
+TradeLink costs $40/month and lets futures traders copy trades across up to 150 accounts, with unlimited prop-firm connections.
+
+There’s also a $10,000 cash bonus for the top affiliate.
+
+Visit [https://peakbot.com/tradelink-affiliate/](https://peakbot.com/tradelink-affiliate/) for all the details
+
+Dillon
+Suggested timing: Day 13
+
+Quick example of your TradeLink affiliate opportunity:
+
+- 25 active referrals = $400/month
+- 50 active referrals = $800/month
+- 100 active referrals = $1,600/month
+
+There’s also a separate $10,000 top-affiliate bonus. Would this be worth testing with your futures audience?
+
+Suggested timing: Day 20
+Subject: Should I close the loop on TradeLink?
+
+Hey [First Name],
+
+One last email about becoming a TradeLink affiliate.
+
+TradeLink lets futures traders copy trades across up to 150 accounts for $40/month.
+
+As an affiliate, you receive:
+
+- 40% recurring commission, $16 per subscriber per month
+- 40% off the first month for your audience
+- An opportunity to win the $10,000 top-affiliate bonus
+
+Interested? Reply “yes” and we’ll send you the details.
+
+https://peakbot.com/tradelink-affiliate/
+
+Dillon
+
+Suggested timing: Day 20
+
+Hey [First Name], one last follow-up on the TradeLink affiliate program.
+
+You earn 40% recurring commission, and your audience gets 40% off their first month.
+
+Interested? Reply “yes” and we’ll send the details. If it’s not a fit, no worries, I’ll leave it here.
+
+Use this once when email and social contact information are unavailable.
+
+Name: Dillon Del Rosso
+Company: PeakBot
+Website: [https://peakbot.com/tradelink](https://peakbot.com/tradelink)
+Subject: TradeLink affiliate partnership
+
+Message:
+
+Hi, I’m Dillon, co-founder of PeakBot.
+
+We built TradeLink, a $40/month futures trade copier that lets traders copy trades across up to 150 accounts.
+
+We’re inviting futures creators and trading communities to become affiliate partners, earning 40% recurring commission while their audience gets 40% off the first month.
+
+Who would be the best person to speak with about an affiliate partnership?
+
+Program details: [https://peakbot.com/tradelink-affiliate/](https://peakbot.com/tradelink-affiliate/) 
