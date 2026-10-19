@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { db } from '../lib/db';
 import { syncDrive } from '../lib/drive-sync';
@@ -8,12 +9,14 @@ import { getWorkspace } from '../lib/workspace';
 import { generateTodayDraft } from '../lib/today-plan';
 import { easternSchedule } from '../lib/sync-state';
 import { hasDemoContext } from '../lib/demo';
+let stage = 'initialization';
 async function main() {
   if (!process.argv.includes('--apply')) throw Error('Explicit --apply required');
   const admin = await db.user.findFirstOrThrow({
     where: { role: 'ADMIN' },
     select: { id: true, email: true },
   });
+  stage = 'drive-import';
   await syncDrive(admin.email);
   const state = await db.driveSync.findUniqueOrThrow({ where: { folderId: tradeLinkFolderId } });
   if (!state.active) throw Error('Drive import inactive');
@@ -22,14 +25,25 @@ async function main() {
     orderBy: { fileId: 'asc' },
   });
   if (!documents.length) throw Error('No readable Drive documents');
+  console.log(
+    'DRIVE_IMPORTED ' +
+      JSON.stringify({
+        documents: documents.length,
+        truncated: documents.filter((d) => d.truncated).length,
+        characters: documents.reduce((n, d) => n + d.content.length, 0),
+        skipped: state.skipped,
+      }),
+  );
   const reviews: {
     document: (typeof documents)[number];
     review: Awaited<ReturnType<typeof reviewDriveDocument>>;
   }[] = [];
   for (const document of documents) {
+    stage = `review-document-${reviews.length + 1}-of-${documents.length}`;
     const review = await reviewDriveDocument(document);
     reviews.push({ document, review });
   }
+  stage = 'save-reviews';
   await db.$transaction(async (tx) => {
     const latestSync = await tx.driveSync.findUniqueOrThrow({
       where: { folderId: tradeLinkFolderId },
@@ -94,11 +108,13 @@ async function main() {
   const date = new Date(easternSchedule().day);
   const previous = await db.dailyPlan.findUnique({ where: { date }, include: { tasks: true } });
   const budget = previous?.budgetMinutes ?? 270;
+  stage = 'generate-today';
   const { draft, provider } = await generateTodayDraft(workspace, budget, 'auto');
   if (!provider.startsWith('openai:')) throw Error('Live OpenAI review required');
   if (easternSchedule().day !== date.toISOString().slice(0, 10))
     throw Error('Eastern date changed during review; retry');
   const batch = randomUUID();
+  stage = 'save-today';
   const plan = await db.$transaction(
     async (tx) => {
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(74182360)`;
@@ -164,7 +180,22 @@ async function main() {
   );
 }
 main()
-  .catch(() => {
+  .catch((error) => {
+    console.error(
+      'DRIVE_REVIEW_FAILURE ' +
+        JSON.stringify({
+          stage,
+          errorType: error instanceof Error ? error.name : 'Unknown',
+          code:
+            error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
+              ? error.code
+              : undefined,
+          validation:
+            error instanceof z.ZodError
+              ? error.issues.map((i) => ({ path: i.path, code: i.code }))
+              : undefined,
+        }),
+    );
     console.error(
       'Drive review/Today refresh failed. No secrets logged. Check Drive permissions, cooldown, OpenAI and current plan status. A previous non-demo plan is preserved on generation failure.',
     );
