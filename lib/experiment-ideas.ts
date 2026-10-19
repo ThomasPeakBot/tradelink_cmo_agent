@@ -122,19 +122,35 @@ export async function generateIdea(
       ),
     };
   }
-  const string = { type: 'string' };
-  const properties = Object.fromEntries(
-    Object.keys(ideaSchema.shape).map((k) => [
-      k,
-      ['steps', 'aiPrompts', 'evidence', 'warnings'].includes(k)
-        ? { type: 'array', items: string }
-        : k === 'costUsd'
-          ? { type: 'number' }
-          : k === 'minutes'
-            ? { type: 'integer' }
-            : string,
-    ]),
-  );
+  const boundedText = { type: 'string', minLength: 1, maxLength: 1600 };
+  const properties = {
+    title: { type: 'string', minLength: 1, maxLength: 160 },
+    mechanism: boundedText,
+    hypothesis: boundedText,
+    audience: boundedText,
+    channel: { type: 'string', minLength: 1, maxLength: 100 },
+    rationale: boundedText,
+    steps: { type: 'array', minItems: 3, maxItems: 6, items: boundedText },
+    aiPrompts: { type: 'array', minItems: 1, maxItems: 2, items: boundedText },
+    successMetric: { type: 'string', minLength: 1, maxLength: 800 },
+    costUsd: { type: 'number', minimum: 0, maximum: 100000 },
+    minutes: { type: 'integer', minimum: 15, maximum: 300 },
+    reviewPoint: boundedText,
+    stopScale: boundedText,
+    evidence: {
+      type: 'array',
+      minItems: 1,
+      maxItems: 8,
+      items: { type: 'string', enum: [...evidenceIds(workspace)] },
+    },
+    warnings: { type: 'array', maxItems: 6, items: boundedText },
+  };
+  let stage = 'request';
+  let status: number | undefined;
+  let providerCode: string | undefined;
+  let providerParam: string | undefined;
+  const safe = (value: unknown) =>
+    typeof value === 'string' && /^[a-zA-Z0-9_.\[\]-]{1,120}$/.test(value) ? value : undefined;
   try {
     const response = await fetcher('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -143,7 +159,7 @@ export async function generateIdea(
       body: JSON.stringify({
         model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
         temperature: 0.8,
-        max_completion_tokens: 5500,
+        max_completion_tokens: 8000,
         response_format: {
           type: 'json_schema',
           json_schema: {
@@ -187,16 +203,44 @@ export async function generateIdea(
         ],
       }),
     });
-    if (!response.ok) throw Error('provider');
+    status = response.status;
+    if (!response.ok) {
+      const failure = await response.json().catch(() => ({}));
+      providerCode = safe(failure.error?.code);
+      providerParam = safe(failure.error?.param);
+      throw Error('provider');
+    }
+    stage = 'response';
     const result = await response.json();
+    if (result.choices?.[0]?.finish_reason === 'length') throw Error('truncated');
+    stage = 'validation';
     return {
       provider: 'OpenAI',
       idea: validateIdea(JSON.parse(result.choices?.[0]?.message?.content ?? ''), workspace),
     };
-  } catch {
-    throw new IdeaError(
-      'Idea generation could not complete. Your saved ideas and feedback are preserved; please retry.',
+  } catch (error) {
+    console.error(
+      'EXPERIMENT_IDEA_GENERATION_FAILED',
+      JSON.stringify({
+        stage,
+        status,
+        providerCode,
+        providerParam,
+        issues:
+          error instanceof z.ZodError
+            ? error.issues.map((issue) => ({ path: issue.path.join('.'), code: issue.code }))
+            : undefined,
+      }),
     );
+    const message =
+      status === 429
+        ? 'OpenAI has reached a usage or rate limit. Check API billing and limits, then retry.'
+        : status === 401 || status === 403
+          ? 'OpenAI rejected access. Check the API project and model permissions.'
+          : stage === 'validation'
+            ? 'The generated idea did not match the required format. Please try again.'
+            : 'Idea generation could not complete. Please retry.';
+    throw new IdeaError(message + ' Your saved ideas and feedback are preserved.');
   }
 }
 export async function ideaAction(user: { id: string; email: string }, body: unknown) {

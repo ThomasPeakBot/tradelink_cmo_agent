@@ -83,6 +83,11 @@ it('grounds OpenAI requests in stored evidence and rejection feedback and valida
     fetcher,
   );
   expect(result.provider).toBe('OpenAI');
+  const schema = JSON.parse(request).response_format.json_schema.schema;
+  expect(schema.properties.title.maxLength).toBe(160);
+  expect(schema.properties.aiPrompts.maxItems).toBe(2);
+  expect(schema.properties.evidence.items.enum).toContain('growth');
+  expect(schema.properties.minutes.maximum).toBe(300);
   expect(request).toContain('No engineering time');
   expect(request).toContain('institutionalMemory');
   expect(() => validateIdea({ ...idea, evidence: ['knowledge:invented'] }, w)).toThrow(
