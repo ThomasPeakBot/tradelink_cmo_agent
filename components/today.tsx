@@ -213,6 +213,8 @@ function TaskCard({
   mutate: Mutate;
 }) {
   const [editing, setEditing] = useState(false);
+  const [deferring, setDeferring] = useState(false);
+  const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [outcome, setOutcome] = useState('');
@@ -279,6 +281,11 @@ function TaskCard({
             </button>
           </div>
         ) : null}
+        {task.status === 'DEFERRED' && task.outcome && (
+          <p>
+            <strong>Deferral reason:</strong> {task.outcome}
+          </p>
+        )}
         {task.status === 'COMPLETED' && (
           <div className="review-result">
             <strong>Reported outcome</strong>
@@ -299,11 +306,7 @@ function TaskCard({
                 </button>
               )}
               {task.status !== 'DEFERRED' && (
-                <button
-                  className="btn"
-                  disabled={busy}
-                  onClick={() => save({ action: 'task', status: 'DEFERRED' })}
-                >
+                <button className="btn" disabled={busy} onClick={() => setDeferring(true)}>
                   Defer task
                 </button>
               )}
@@ -311,6 +314,43 @@ function TaskCard({
                 {editing ? 'Cancel edit' : 'Edit task'}
               </button>
             </div>
+            {deferring && (
+              <form
+                className="today-task-form"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  await save({ action: 'task', status: 'DEFERRED', reason });
+                }}
+              >
+                <label>
+                  Why are you deferring this task?
+                  <textarea
+                    required
+                    maxLength={2000}
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="For example: blocked on access, wrong priority, or not enough time."
+                  />
+                </label>
+                <p>
+                  Your reason is saved to CMO memory. A replacement will be proposed within your
+                  remaining time, with steps and AI prompts. It still needs your approval.
+                </p>
+                <div className="inline-buttons">
+                  <button className="btn primary" disabled={busy || !reason.trim()}>
+                    {busy ? 'Preparing replacement…' : 'Defer and suggest another task'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={busy}
+                    onClick={() => setDeferring(false)}
+                  >
+                    Cancel deferral
+                  </button>
+                </div>
+              </form>
+            )}
             {editing && (
               <form
                 className="today-task-form"

@@ -1,3 +1,4 @@
+import { generateReplacement } from './today-replacement';
 import { Prisma } from '@prisma/client';
 import { attachTaskGuide } from './today-guidance';
 import { z } from 'zod';
@@ -91,6 +92,77 @@ export async function todayAction(
     await attachTaskGuide(actor, request.planId, request.taskId, request.version);
     return;
   }
+  let replacement: Awaited<ReturnType<typeof generateReplacement>> | undefined;
+  if (body.action === 'task' && body.status === 'DEFERRED') {
+    const request = z
+      .object({ taskId: id, reason: z.string().trim().min(1).max(2000) })
+      .parse(body);
+    const plan = await db.dailyPlan.findUniqueOrThrow({
+      where: { id: base.planId },
+      include: { tasks: true },
+    });
+    if (plan.version !== base.version)
+      throw new TodayError('This plan changed in another tab. Refresh before editing.');
+    const task = plan.tasks.find((t) => t.id === request.taskId);
+    if (
+      !task ||
+      task.status === 'COMPLETED' ||
+      task.status === 'DEFERRED' ||
+      plan.date.toISOString().slice(0, 10) !== easternSchedule().day
+    )
+      throw new TodayError('Choose an active unfinished task from today’s plan.');
+    const available =
+      plan.budgetMinutes -
+      40 -
+      plan.tasks.reduce(
+        (n, t) =>
+          n +
+          (t.id === task.id || t.status === 'DEFERRED'
+            ? 0
+            : Math.max(t.minutes, t.actualMinutes ?? 0)),
+        0,
+      );
+    if (available < 15)
+      throw new TodayError(
+        'There is less than 15 minutes left for a replacement. Adjust the plan first.',
+      );
+    await db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(74182364)`;
+      if (
+        await tx.auditLog.findFirst({
+          where: {
+            action: 'TODAY_DEFER_REQUEST',
+            entityId: task.id,
+            createdAt: { gte: new Date(Date.now() - 60000) },
+          },
+        })
+      )
+        throw new TodayError(
+          'A replacement was requested recently. Wait one minute before retrying.',
+        );
+      await tx.auditLog.create({
+        data: {
+          actor: actor.email,
+          action: 'TODAY_DEFER_REQUEST',
+          entityType: 'TodayTask',
+          entityId: task.id,
+          details: 'Requested a replacement proposal; no external action.',
+        },
+      });
+    });
+    try {
+      replacement = await generateReplacement(await getWorkspace(actor.id), {
+        title: task.title,
+        reason: request.reason,
+        maximumMinutes: Math.min(180, available),
+        existingTitles: plan.tasks.map((t) => t.title),
+      });
+    } catch {
+      throw new TodayError(
+        'Could not prepare a replacement. Your current task is unchanged; retry in a minute.',
+      );
+    }
+  }
   await db.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(74182360)`;
     const plan = await tx.dailyPlan.findUniqueOrThrow({
@@ -108,6 +180,7 @@ export async function todayAction(
           taskId: id,
           status: z.enum(['APPROVED', 'DEFERRED', 'COMPLETED']),
           outcome: z.string().trim().max(3000).default(''),
+          reason: z.string().trim().min(1).max(2000).optional(),
           actualMinutes: z.number().int().min(0).max(1440).optional(),
         })
         .strict()
@@ -130,6 +203,7 @@ export async function todayAction(
         where: { id: task.id },
         data: {
           status: input.status,
+          ...(input.status === 'DEFERRED' ? { outcome: input.reason } : {}),
           ...(input.status === 'COMPLETED'
             ? {
                 outcome: input.outcome,
@@ -139,6 +213,36 @@ export async function todayAction(
             : {}),
         },
       });
+      if (input.status === 'DEFERRED') {
+        if (!input.reason || !replacement || task.status === 'DEFERRED')
+          throw new TodayError('A deferral reason and replacement are required.');
+        const next = await tx.todayTask.create({
+          data: {
+            ...replacement.task,
+            planId: plan.id,
+            position: Math.max(...plan.tasks.map((t) => t.position)) + 1,
+            status: 'PROPOSED',
+          },
+        });
+        await tx.memory.create({
+          data: {
+            id: `today-deferral:${task.id}:${plan.version}`,
+            title: `Deferred: ${task.title}`,
+            kind: 'OBSERVATION',
+            content: `${plan.date.toISOString().slice(0, 10)}. Owner deferred task: ${task.title}. Reason (owner report): ${input.reason}. Alternative proposed: ${next.title}. Source: ${replacement.provider}. Not a completed outcome or external authorization.`,
+            isDemo: plan.isDemo,
+          },
+        });
+        await tx.auditLog.create({
+          data: {
+            actor: actor.email,
+            action: 'TODAY_DEFERRED_REPLACED',
+            entityType: 'TodayTask',
+            entityId: task.id,
+            details: `Reason saved to task and memory. Proposed replacement ${next.id}; ${replacement.provider}; no external execution.`,
+          },
+        });
+      }
       if (input.status === 'COMPLETED')
         await tx.memory.create({
           data: {
@@ -167,7 +271,7 @@ export async function todayAction(
       if (!task || task.status === 'COMPLETED')
         throw new TodayError('Choose an unfinished task from this plan.');
       const total = plan.tasks.reduce(
-        (n, t) => n + (t.status === 'DEFERRED' ? 0 : t.id === task.id ? input.minutes : t.minutes),
+        (n, t) => n + (t.id === task.id ? input.minutes : t.status === 'DEFERRED' ? 0 : t.minutes),
         0,
       );
       if (total > plan.budgetMinutes - 40)

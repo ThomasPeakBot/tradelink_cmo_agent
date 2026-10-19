@@ -18,6 +18,7 @@ async function clean() {
       },
     },
   });
+  await db.memory.deleteMany({ where: { id: { startsWith: 'today-deferral:' } } });
   await db.dailyPlan.deleteMany({});
   await db.auditLog.deleteMany({ where: { action: { startsWith: 'TODAY_' } } });
 }
@@ -53,7 +54,7 @@ it('requires approval and an observed outcome, rejects stale edits and preserves
     todayAction(actor, { ...base, status: 'COMPLETED', outcome: 'Done' }),
   ).rejects.toThrow('Approve');
   await todayAction(actor, { ...base, status: 'APPROVED' });
-  await expect(todayAction(actor, { ...base, status: 'DEFERRED' })).rejects.toThrow('another tab');
+  await expect(todayAction(actor, { ...base, status: 'DEFERRED', reason: 'Blocked' })).rejects.toThrow('another tab');
   await todayAction(actor, {
     ...base,
     version: 2,
@@ -100,4 +101,44 @@ it('enforces work budgets and updates a single end-of-day learning instead of du
   expect(
     (await db.memory.findUniqueOrThrow({ where: { id: `today-checkin:${plan.id}` } })).content,
   ).toContain('Reconciled');
+});
+it('requires a deferral reason and atomically proposes a distinct guided replacement within budget', async () => {
+  const plan = await generate();
+  const task = plan.tasks[0];
+  const request = {
+    action: 'task',
+    planId: plan.id,
+    version: 1,
+    taskId: task.id,
+    status: 'DEFERRED',
+  };
+  await expect(todayAction(actor, request)).rejects.toThrow();
+  expect((await db.todayTask.findUniqueOrThrow({ where: { id: task.id } })).status).toBe(
+    'PROPOSED',
+  );
+  await todayAction(actor, {
+    ...request,
+    reason: 'Waiting on access; need something I can draft offline.',
+  });
+  const updated = await db.dailyPlan.findUniqueOrThrow({
+    where: { id: plan.id },
+    include: { tasks: true },
+  });
+  expect(updated.tasks).toHaveLength(4);
+  expect(updated.version).toBe(2);
+  const deferred = updated.tasks.find((t) => t.id === task.id)!;
+  expect(deferred.status).toBe('DEFERRED');
+  expect(deferred.outcome).toContain('Waiting on access');
+  const replacement = updated.tasks.find((t) => !plan.tasks.some((old) => old.id === t.id))!;
+  expect(replacement.status).toBe('PROPOSED');
+  expect(replacement.guide).toBeTruthy();
+  expect(plan.tasks.map((t) => t.title)).not.toContain(replacement.title);
+  expect(
+    updated.tasks.filter((t) => t.status !== 'DEFERRED').reduce((n, t) => n + t.minutes, 0),
+  ).toBeLessThanOrEqual(230);
+  expect(
+    (await db.memory.findUniqueOrThrow({ where: { id: `today-deferral:${task.id}:1` } })).content,
+  ).toContain('Waiting on access');
+  await expect(todayAction(actor, { ...request, reason: 'Repeat' })).rejects.toThrow('another tab');
+  expect(await db.todayTask.count({ where: { planId: plan.id } })).toBe(4);
 });

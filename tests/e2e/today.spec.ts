@@ -21,6 +21,23 @@ test('Today guides a bounded workday, saves task outcomes and records a check-in
     .click();
   await expect(page.getByRole('button', { name: /Copy AI prompt:/ }).first()).toHaveText('Copied');
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('TradeLink');
+  await page.getByRole('button', { name: 'Defer task', exact: true }).last().click();
+  await expect(
+    page.getByRole('button', { name: 'Defer and suggest another task', exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByLabel('Why are you deferring this task?')
+    .fill('Waiting on creative assets; need a draft I can prepare now.');
+  await page.getByRole('button', { name: 'Defer and suggest another task', exact: true }).click();
+  await expect(page.getByText('DEFERRED', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('Deferral reason: Waiting on creative assets; need a draft I can prepare now.', {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Step-by-step instructions', exact: true }),
+  ).toHaveCount(4);
   await page.getByRole('button', { name: 'Approve task', exact: true }).first().click();
   await page
     .getByLabel('Observed outcome')

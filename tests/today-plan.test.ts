@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import { generateReplacement } from '../lib/today-replacement';
 import { generateTodayDraft, validateTodayDraft } from '../lib/today-plan';
 import type { Workspace } from '../lib/workspace';
 import { growthSummary } from '../lib/growth';
@@ -106,4 +107,38 @@ it('keeps the highest-priority real experiment after a stale-data reconciliation
   expect(draft.tasks[0].title).toBe('Reconcile subscriber and revenue evidence');
   expect(draft.tasks[1].title).toBe('Test the referral offer');
   expect(draft.tasks[1].evidence).toEqual(['experiment:highest-priority']);
+});
+
+it('replacement considers the owner reason and rejects duplicate or over-budget AI output', async () => {
+  vi.stubEnv('OPENAI_API_KEY', 'fixture-key');
+  vi.stubEnv('TRADELINK_OPENAI_API_KEY', '');
+  const { draft } = await generateTodayDraft(workspace, 270, 'local');
+  const context = {
+    title: 'Blocked task',
+    reason: 'No account access today',
+    maximumMinutes: 30,
+    existingTitles: draft.tasks.map((t) => t.title),
+  };
+  const fetcher = vi
+    .fn()
+    .mockResolvedValue(
+      new Response(
+        JSON.stringify({ choices: [{ message: { content: JSON.stringify(draft.tasks[0]) } }] }),
+      ),
+    );
+  const result = await generateReplacement(workspace, context, fetcher);
+  expect(result.provider).toBe('local evidence replacement');
+  expect(result.task.minutes).toBeLessThanOrEqual(30);
+  expect(context.existingTitles).not.toContain(result.task.title);
+  const request = JSON.parse(fetcher.mock.calls[0][1].body);
+  expect(JSON.stringify(request.messages)).toContain(context.reason);
+  expect(request.tools).toBeUndefined();
+  const success = vi
+    .fn()
+    .mockResolvedValue(
+      new Response(
+        JSON.stringify({ choices: [{ message: { content: JSON.stringify(result.task) } }] }),
+      ),
+    );
+  expect((await generateReplacement(workspace, context, success)).provider).toBe('AI replacement');
 });
