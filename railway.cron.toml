@@ -1,8 +1,0 @@
-[build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile.cron"
-
-[deploy]
-startCommand = "node /app/cron-trigger.mjs"
-cronSchedule = "0 8,9 * * *"
-restartPolicyType = "NEVER"
