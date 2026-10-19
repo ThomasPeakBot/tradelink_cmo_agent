@@ -576,14 +576,14 @@ export function OperatingSystem() {
                 {hasDemoContext(data)
                   ? 'Demo workspace'
                   : data.stripe.lastSync
-                    ? 'Stripe snapshot workspace'
+                    ? 'Live workspace'
                     : 'Manual data workspace'}
               </strong>
               <span>
                 {hasDemoContext(data)
                   ? 'Sample records are labeled DEMO. Replace assumptions before making business decisions.'
                   : data.stripe.lastSync
-                    ? 'Uses stored Stripe snapshots. Sync manually in Settings; other inputs may be manual.'
+                    ? 'Uses verified integration snapshots and manual inputs. Sync all refreshes connected sources; automatic sync runs at 4 a.m. Eastern.'
                     : 'Manual observations. Stripe has not been synced.'}
               </span>
             </span>

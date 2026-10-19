@@ -1,0 +1,17 @@
+# Transition from demo to live evidence
+
+Owner-authorized operation: `node --import tsx scripts/go-live.ts --apply --migrate --launch-date=2026-10-01`.
+
+This migrates the archive table, then runs a serializable transaction with a dedicated advisory lock. Only records marked `isDemo=true` are removed from active metrics, channel observations, experiments, knowledge, memory, approvals, alerts, reports, messages and daily plans. Before removing anything, complete rows are copied into PostgreSQL `DemoArchive`, grouped by a batch ID. Tasks of demo plans, including edits and completed outcomes, are archived before their plans cascade-delete them. A failed cleanup transaction rolls back archival, deletions and goal updates together. An audit records counts and the batch ID; no content or credentials are printed. Repeat runs with no new demo records remove nothing further.
+
+Live records, snapshots, integrations, users, sessions, unmarked plans, manual inputs and prior audits are untouched. Channel names remain even if their demo metrics are removed. Only an exact original seeded company-description placeholder is replaced; edited descriptions are preserved. Goal dates are set explicitly to October 1, 2026–October 1, 2027; baseline and target subscriber counts are preserved. The archive retains the previous company configuration.
+
+The archive is excluded from normal UI and CMO evidence. Authorized operators can recover records by batch ID from the database; restoration must respect existing primary keys, date uniqueness and plan/task relationships. It is not a user-facing archive browser. Demo-derived plans, reports, messages and memories remain recoverable in this archive rather than being relabeled as live. Generate a new Today plan after the transition.
+
+This script is deliberately not part of normal startup. When run via a temporary Railway pre-deploy command, clear that command after verification. Normal bootstrap already returns without seeding any existing initialized workspace.
+
+## Requested Drive review and Today replacement
+
+`scripts/live-transition.ts` runs the owner-authorized cleanup followed by `scripts/refresh-today-from-drive.ts --apply`. The latter refreshes the approved private folder and sends every imported document's complete stored text to the configured OpenAI model for a structured, source-linked reference review. Imported text may be capped at 20,000 characters per file; unsupported files remain explicitly unreviewed. No full-folder claim is made when unsupported/truncated files exist. Summaries and coverage are saved in institutional memory, so every reviewed document can inform the planner rather than only its normal eight retrieved excerpts. Review failure prevents plan generation. No Drive content or secrets are printed in logs.
+
+A replacement Today plan uses the previous work budget or 270 minutes by default and is generated only after the review. If a live plan already exists, its complete row and tasks/outcomes are archived in `DemoArchive` under a new batch before replacement, after checking its ID/version. This table also serves as a recovery archive for explicitly replaced non-demo plans. Completed work remains recoverable; new tasks are proposals, not executed actions. Drive source deletion or a failed sync prevents normal source retrieval, but stored memory summaries remain historical reviewed evidence with their source timestamps and coverage.

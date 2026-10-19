@@ -277,3 +277,14 @@ model XAdsSnapshot {
   data Json
   @@unique([accountId,date])
 }
+
+// Recovery archive, excluded from all active planning and reporting context.
+model DemoArchive {
+  id String @id
+  batchId String
+  recordType String
+  recordId String
+  data Json
+  archivedAt DateTime @default(now())
+  @@index([batchId])
+}

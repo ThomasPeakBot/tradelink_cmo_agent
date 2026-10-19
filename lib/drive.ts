@@ -36,6 +36,7 @@ export type DriveImport = {
   folderName: string;
   capturedAt: string;
   skipped: number;
+  skippedByMime?: Record<string, number>;
   documents: {
     fileId: string;
     name: string;
@@ -211,6 +212,8 @@ export class DriveReadOnlyProvider {
             }
             if (!supported.has(file.mimeType)) {
               result.skipped++;
+              result.skippedByMime ??= {};
+              result.skippedByMime[file.mimeType] = (result.skippedByMime[file.mimeType] ?? 0) + 1;
               continue;
             }
             if (file.capabilities?.canDownload === false)

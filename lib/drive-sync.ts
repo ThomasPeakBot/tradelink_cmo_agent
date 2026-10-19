@@ -69,7 +69,7 @@ export async function syncDrive(actor: string, provider = new DriveReadOnlyProvi
           action: 'DRIVE_SYNC_SUCCESS',
           entityType: 'DriveSync',
           entityId,
-          details: `Imported ${result.documents.length} text documents; skipped ${result.skipped} unsupported files. No Drive writes.`,
+          details: `Imported ${result.documents.length} text documents; skipped ${result.skipped} unsupported files. Types: ${JSON.stringify(result.skippedByMime ?? {})}. No Drive writes.`,
         },
       });
     });
