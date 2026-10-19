@@ -1636,7 +1636,8 @@ function MarkdownText({ content }: { content: string }) {
 function Reports({ data, mutate }: { data: Data; mutate: Mutate }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [mode, setMode] = useState('auto');
-  const report = data.reports.find((r) => r.id === selected) || data.reports[0];
+  const savedReports = data.reports.filter((r) => r.type !== 'DRIVE_INVENTORY');
+  const report = savedReports.find((r) => r.id === selected) || savedReports[0];
   return (
     <>
       <div className="section-tools">
@@ -1681,7 +1682,7 @@ function Reports({ data, mutate }: { data: Data; mutate: Mutate }) {
       </div>
       <div className="reports-layout">
         <Panel title="Saved briefings" subtitle="Persistent, point-in-time records">
-          {data.reports.map((r) => (
+          {savedReports.map((r) => (
             <button
               key={r.id}
               className={`report-link ${report?.id === r.id ? 'selected' : ''}`}
@@ -1697,7 +1698,7 @@ function Reports({ data, mutate }: { data: Data; mutate: Mutate }) {
               <ChevronRight size={14} />
             </button>
           ))}
-          {!data.reports.length && (
+          {!savedReports.length && (
             <Empty>Generate a briefing to start your operating history.</Empty>
           )}
         </Panel>
@@ -2088,13 +2089,13 @@ function DriveKnowledge({ data, mutate }: { data: Data; mutate: Mutate }) {
           </a>
         </p>
         <p>
-          Read-only import of Google Docs, plain text and Markdown, including nested folders. PDFs,
-          Word files, Sheets, Slides, images and shortcuts are skipped. Edit originals in Drive,
-          then sync here.
+          Read-only text import and recursive inventory, including nested folders. Spreadsheet and
+          media content reviews are stored separately in institutional memory and Briefs & plans,
+          with file-by-file coverage limits. Edit originals in Drive, then sync here.
         </p>
         <p>
           {drive.lastSync
-            ? `Last successful sync: ${new Date(drive.lastSync).toLocaleString()}. ${drive.skipped} unsupported files skipped.`
+            ? `Last successful sync: ${new Date(drive.lastSync).toLocaleString()}. ${drive.skipped} non-text files inventoried separately.`
             : 'No successful Drive import yet.'}
         </p>
         {!drive.configured && (

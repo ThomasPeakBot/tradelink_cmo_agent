@@ -18,6 +18,18 @@ const result: DriveImport = {
   folderName: 'TradeLink',
   capturedAt: new Date().toISOString(),
   skipped: 1,
+  folders: [{ fileId: tradeLinkFolderId, path: 'TradeLink' }],
+  inventory: [
+    {
+      fileId: 'fixture_image',
+      name: 'Asset',
+      path: 'TradeLink/Asset',
+      mimeType: 'image/png',
+      modifiedAt: new Date().toISOString(),
+      parentId: tradeLinkFolderId,
+      size: '1024',
+    },
+  ],
   documents: [
     {
       fileId: 'fixture_document',
@@ -30,6 +42,7 @@ const result: DriveImport = {
   ],
 };
 async function clear() {
+  await db.report.deleteMany({ where: { id: 'drive-file-inventory' } });
   await db.driveDocument.deleteMany({ where: { folderId: tradeLinkFolderId } });
   await db.driveSync.deleteMany({ where: { folderId: tradeLinkFolderId } });
   await db.auditLog.deleteMany({ where: { actor } });
@@ -50,6 +63,11 @@ it('atomically replaces folder references, preserves manual knowledge and ground
   const user = await db.user.findUniqueOrThrow({ where: { email: 'admin@tradelink.local' } });
   const manual = await db.knowledge.count();
   await syncDrive(actor, new Fixture(result));
+  const inventory = await db.report.findUniqueOrThrow({ where: { id: 'drive-file-inventory' } });
+  expect(JSON.parse(inventory.content)).toMatchObject({
+    folderId: tradeLinkFolderId,
+    files: [{ fileId: 'fixture_image', path: 'TradeLink/Asset' }],
+  });
   const w = await getWorkspace(user.id);
   expect(w.drive.documents[0].content).toContain('Approved referral');
   expect(await db.knowledge.count()).toBe(manual);

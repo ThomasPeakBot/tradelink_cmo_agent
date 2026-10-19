@@ -1,10 +1,10 @@
 import 'dotenv/config';
 import { z } from 'zod';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { db } from '../lib/db';
 import { syncDrive } from '../lib/drive-sync';
 import { tradeLinkFolderId } from '../lib/drive';
-import { reviewDriveDocument } from '../lib/drive-review';
+import { driveReviewSchema, reviewDriveDocument } from '../lib/drive-review';
 import { getWorkspace } from '../lib/workspace';
 import { generateTodayDraft } from '../lib/today-plan';
 import { easternSchedule } from '../lib/sync-state';
@@ -17,7 +17,7 @@ async function main() {
     select: { id: true, email: true },
   });
   stage = 'drive-import';
-  await syncDrive(admin.email);
+  if (!process.argv.includes('--reuse-current-import')) await syncDrive(admin.email);
   const state = await db.driveSync.findUniqueOrThrow({ where: { folderId: tradeLinkFolderId } });
   if (!state.active) throw Error('Drive import inactive');
   const documents = await db.driveDocument.findMany({
@@ -40,7 +40,25 @@ async function main() {
   }[] = [];
   for (const document of documents) {
     stage = `review-document-${reviews.length + 1}-of-${documents.length}`;
-    const review = await reviewDriveDocument(document);
+    let review: Awaited<ReturnType<typeof reviewDriveDocument>> | null = null;
+    if (process.argv.includes('--reuse-reviewed-documents')) {
+      const memory = await db.memory.findUnique({
+        where: { id: `drive-review:${document.fileId}` },
+      });
+      try {
+        const parsed = JSON.parse(memory?.content ?? '{}');
+        if (
+          parsed.contentHash === createHash('sha256').update(document.content).digest('hex') &&
+          Date.parse(parsed.modifiedAt) === document.modifiedAt.getTime()
+        )
+          review = driveReviewSchema.parse({
+            summary: parsed.summary,
+            growthImplications: parsed.growthImplications,
+            uncertainties: parsed.uncertainties,
+          });
+      } catch {}
+    }
+    review ??= await reviewDriveDocument(document);
     reviews.push({ document, review });
   }
   stage = 'save-reviews';
@@ -59,6 +77,9 @@ async function main() {
         isDemo: false,
         content: JSON.stringify({
           source: `https://drive.google.com/file/d/${document.fileId}/view`,
+          contentHash: createHash('sha256').update(document.content).digest('hex'),
+          reviewVersion: 'recursive-content-v1',
+          status: 'REVIEWED',
           modifiedAt: document.modifiedAt.toISOString(),
           syncedAt: document.syncedAt.toISOString(),
           reviewedAt: new Date().toISOString(),
@@ -74,20 +95,21 @@ async function main() {
         update: data,
       });
     }
-    await tx.memory.upsert({
-      where: { id: 'drive-folder-review-coverage' },
-      create: {
-        id: 'drive-folder-review-coverage',
-        title: 'Drive folder review coverage',
-        kind: 'REFERENCE',
-        content: `Reviewed all ${documents.length} imported text documents. ${state.skipped} unsupported files were not read. ${documents.filter((d) => d.truncated).length} imports were truncated. This is not a review of unsupported media or full text beyond import limits.`,
-        isDemo: false,
-      },
-      update: {
-        content: `Reviewed all ${documents.length} imported text documents. ${state.skipped} unsupported files were not read. ${documents.filter((d) => d.truncated).length} imports were truncated. This is not a review of unsupported media or full text beyond import limits.`,
-        isDemo: false,
-      },
-    });
+    if (!process.argv.includes('--reuse-reviewed-documents'))
+      await tx.memory.upsert({
+        where: { id: 'drive-folder-review-coverage' },
+        create: {
+          id: 'drive-folder-review-coverage',
+          title: 'Drive folder review coverage',
+          kind: 'REFERENCE',
+          content: `Reviewed all ${documents.length} imported text documents. ${state.skipped} unsupported files were not read. ${documents.filter((d) => d.truncated).length} imports were truncated. This is not a review of unsupported media or full text beyond import limits.`,
+          isDemo: false,
+        },
+        update: {
+          content: `Reviewed all ${documents.length} imported text documents. ${state.skipped} unsupported files were not read. ${documents.filter((d) => d.truncated).length} imports were truncated. This is not a review of unsupported media or full text beyond import limits.`,
+          isDemo: false,
+        },
+      });
     await tx.auditLog.create({
       data: {
         actor: admin.email,

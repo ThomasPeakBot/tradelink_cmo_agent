@@ -63,6 +63,31 @@ export async function syncDrive(actor: string, provider = new DriveReadOnlyProvi
         create: { folderId: tradeLinkFolderId, ...data },
         update: data,
       });
+      await tx.report.upsert({
+        where: { id: 'drive-file-inventory' },
+        create: {
+          id: 'drive-file-inventory',
+          type: 'DRIVE_INVENTORY',
+          title: 'Drive recursive file inventory',
+          provider: 'google-drive-read-only',
+          isDemo: false,
+          content: JSON.stringify({
+            folderId: result.folderId,
+            capturedAt: result.capturedAt,
+            folders: result.folders ?? [],
+            files: result.inventory ?? [],
+          }),
+        },
+        update: {
+          content: JSON.stringify({
+            folderId: result.folderId,
+            capturedAt: result.capturedAt,
+            folders: result.folders ?? [],
+            files: result.inventory ?? [],
+          }),
+          isDemo: false,
+        },
+      });
       await tx.auditLog.create({
         data: {
           actor,

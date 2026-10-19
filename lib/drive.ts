@@ -37,6 +37,16 @@ export type DriveImport = {
   capturedAt: string;
   skipped: number;
   skippedByMime?: Record<string, number>;
+  inventory?: {
+    fileId: string;
+    name: string;
+    path: string;
+    mimeType: string;
+    modifiedAt: string;
+    parentId: string;
+    size: string | null;
+  }[];
+  folders?: { fileId: string; path: string }[];
   documents: {
     fileId: string;
     name: string;
@@ -52,6 +62,7 @@ const metadata = z.object({
   mimeType: z.string(),
   trashed: z.boolean().optional(),
   modifiedTime: z.string().datetime().optional(),
+  size: z.string().regex(/^\d+$/).optional(),
   parents: z.array(fileId).optional(),
   capabilities: z.object({ canDownload: z.boolean().optional() }).optional(),
 });
@@ -82,6 +93,41 @@ async function boundedText(response: Response, max: number) {
   }
   return Buffer.concat(chunks).toString('utf8');
 }
+export async function driveAccessToken(
+  fetcher: typeof fetch = fetch,
+  signal: AbortSignal = AbortSignal.timeout(30000),
+) {
+  const account = serviceAccount.parse(JSON.parse(process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON!));
+  const now = Math.floor(Date.now() / 1000);
+  const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+  const input =
+    encode({ alg: 'RS256', typ: 'JWT' }) +
+    '.' +
+    encode({
+      iss: account.client_email,
+      scope: 'https://www.googleapis.com/auth/drive.readonly',
+      aud: 'https://oauth2.googleapis.com/token',
+      iat: now,
+      exp: now + 3600,
+    });
+  const assertion =
+    input + '.' + sign('RSA-SHA256', Buffer.from(input), account.private_key).toString('base64url');
+  const tokenResponse = await fetcher('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    redirect: 'error',
+    cache: 'no-store',
+    signal,
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion,
+    }),
+  });
+  const token = z
+    .object({ access_token: z.string().min(1), token_type: z.literal('Bearer') })
+    .parse(JSON.parse(await boundedText(tokenResponse, 64000)));
+  return token.access_token;
+}
 export class DriveReadOnlyProvider {
   constructor(private fetcher: typeof fetch = fetch) {}
   async fetchData(): Promise<DriveImport> {
@@ -92,39 +138,7 @@ export class DriveReadOnlyProvider {
       );
     const signal = AbortSignal.timeout(90000);
     try {
-      const account = serviceAccount.parse(
-        JSON.parse(process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON!),
-      );
-      const now = Math.floor(Date.now() / 1000);
-      const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
-      const input =
-        encode({ alg: 'RS256', typ: 'JWT' }) +
-        '.' +
-        encode({
-          iss: account.client_email,
-          scope: 'https://www.googleapis.com/auth/drive.readonly',
-          aud: 'https://oauth2.googleapis.com/token',
-          iat: now,
-          exp: now + 3600,
-        });
-      const assertion =
-        input +
-        '.' +
-        sign('RSA-SHA256', Buffer.from(input), account.private_key).toString('base64url');
-      const tokenResponse = await this.fetcher('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        redirect: 'error',
-        cache: 'no-store',
-        signal,
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-          assertion,
-        }),
-      });
-      const token = z
-        .object({ access_token: z.string().min(1), token_type: z.literal('Bearer') })
-        .parse(JSON.parse(await boundedText(tokenResponse, 64000)));
+      const accessToken = await driveAccessToken(this.fetcher, signal);
       let requests = 0;
       const get = async (path: string, params: Record<string, string> = {}, max = 1_000_000) => {
         if (++requests > 160)
@@ -140,7 +154,7 @@ export class DriveReadOnlyProvider {
             redirect: 'error',
             cache: 'no-store',
             signal,
-            headers: { Authorization: `Bearer ${token.access_token}` },
+            headers: { Authorization: `Bearer ${accessToken}` },
           }),
           max,
         );
@@ -161,6 +175,8 @@ export class DriveReadOnlyProvider {
         capturedAt: new Date().toISOString(),
         skipped: 0,
         documents: [],
+        inventory: [],
+        folders: [{ fileId: root.id, path: root.name }],
       };
       const queue = [{ id: root.id, path: root.name, depth: 0 }];
       const seen = new Set<string>([root.id]);
@@ -175,7 +191,7 @@ export class DriveReadOnlyProvider {
             q: `'${folder.id}' in parents and trashed = false`,
             pageSize: '100',
             fields:
-              'nextPageToken,incompleteSearch,files(id,name,mimeType,modifiedTime,parents,trashed,capabilities(canDownload))',
+              'nextPageToken,incompleteSearch,files(id,name,mimeType,modifiedTime,size,parents,trashed,capabilities(canDownload))',
             supportsAllDrives: 'true',
             includeItemsFromAllDrives: 'true',
           };
@@ -203,6 +219,7 @@ export class DriveReadOnlyProvider {
                   'limit',
                   'Drive import supports at most five nested folder levels. No partial import was saved.',
                 );
+              result.folders!.push({ fileId: file.id, path: folder.path + '/' + file.name });
               queue.push({
                 id: file.id,
                 path: folder.path + '/' + file.name,
@@ -210,6 +227,16 @@ export class DriveReadOnlyProvider {
               });
               continue;
             }
+            if (!file.modifiedTime) throw Error('Missing modification date');
+            result.inventory!.push({
+              fileId: file.id,
+              name: file.name,
+              path: folder.path + '/' + file.name,
+              mimeType: file.mimeType,
+              modifiedAt: file.modifiedTime,
+              parentId: folder.id,
+              size: file.size ?? null,
+            });
             if (!supported.has(file.mimeType)) {
               result.skipped++;
               result.skippedByMime ??= {};

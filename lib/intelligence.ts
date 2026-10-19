@@ -70,7 +70,17 @@ export function companyEvidence(w: Workspace, prompt: string) {
     priorities: w.priorities,
     companyKnowledge: w.knowledge,
     googleDriveKnowledge: driveEvidence(w.drive, prompt),
-    institutionalMemory: w.memories,
+    recursiveDriveReviewCoverage: w.drive.available
+      ? (w.reports.find((r) => r.type === 'DRIVE_REVIEW')?.content.slice(0, 8000) ?? null)
+      : null,
+    institutionalMemory: w.memories.filter((m) => {
+      if (!m.id.startsWith('drive-asset-review:') && !m.id.startsWith('drive-review:')) return true;
+      try {
+        return JSON.parse(m.content).status !== 'FAILED';
+      } catch {
+        return true;
+      }
+    }),
     decisions: w.approvals.filter((a) => a.status !== 'PENDING'),
     activeAlerts: w.alerts.filter((a) => !a.acknowledged),
     recentConversation: w.messages.slice(-8).map((m) => ({ role: m.role, content: m.content })),

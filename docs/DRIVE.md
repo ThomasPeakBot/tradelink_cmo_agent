@@ -42,3 +42,17 @@ Unit fixtures verify JWT signature/read-only scope, non-delegation, fixed origin
 ## Live activation
 
 Owner-approved activation was verified on October 18, 2026 (Eastern). The first successful folder import stored **10 supported documents** and skipped **45 unsupported files**. The configured adapter is now included in Sync all and the daily 4am Eastern schedule. The first import used a one-time deployment verification command that was subsequently removed. Keep the existing working credential; no replacement or regeneration is needed. File-type support and excerpt limits above still apply.
+
+## Recursive content review
+
+An owner-requested `node --import tsx scripts/review-drive-everything.ts --apply` refreshes the entire approved hierarchy, records folder/file inventory, and reviews each file. It uses the existing Viewer service account and OpenAI account; no broader scopes, public sharing, Drive writes or external action executor is added.
+
+- Text: complete imported Docs/plain text/Markdown.
+- Sheets: Drive exports XLSX; a bounded ZIP/XML parser reads cached values and formulas across every worksheet, including hidden tabs. It never evaluates formulas or follows external links. Charts, drawings and comments are not interpreted. Original files remain unchanged. Limits: 2,000 archive entries, 100 MB total uncompressed, 200,000 cells and one million extracted characters; unsafe DTD/entity XML is rejected.
+- PNG/JPEG: visual analysis of a rendered preview up to 1600px. Transparency is shown on neutral gray; fine print may be unreadable.
+- Photoshop: flattened composite preview; hidden layers, alternate states, editable text and off-canvas elements remain unreviewed. Marked PARTIAL.
+- MP4: at most 60 frames sampled across the complete timeline (approximately every second for short clips, less often for longer clips) plus full audio transcription where possible. Videos over 10 minutes are blocked. Reviews are marked PARTIAL because continuous motion and unsampled frames are not read; failed audio transcription is disclosed.
+
+Download bounds are 30 MB for ordinary files, 100 MB for PSD, 150 MB for video and 500 MB per run. Each download revalidates ID, MIME type, revision, parent membership and download permission against the scanned inventory, uses fixed Google API endpoints and prohibits redirects. Parsing/rendering runs without a shell, with time/resource bounds, private temporary files and cleanup. Runtime media tools are installed by the Dockerfile (`ffmpeg`, `imagemagick`, `python3`).
+
+File-specific summaries, timestamps and coverage are saved in institutional memory. A human-readable file-by-file report appears under Briefs & plans. A coverage memory explicitly distinguishes REVIEWED, PARTIAL and FAILED. Successful matching-version/revision reviews can resume without repeating API calls. Daily scheduled Drive sync refreshes text/inventory only; it does not automatically run paid model/media reviews. One-time review commands must be cleared from Railway pre-deploy settings after use. The requested Today plan is refreshed from saved reviews; the prior plan/tasks remain recoverable in the archive.
