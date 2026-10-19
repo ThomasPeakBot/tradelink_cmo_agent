@@ -2045,3 +2045,38 @@ html[data-theme='dark'] .rank {
   line-height: 1.65;
   padding: 20px;
 }
+
+/* Native disclosures keep task drafts mounted while hiding long execution details. */
+.today-task-toggle {
+  cursor: pointer;
+  list-style: none;
+  margin-bottom: 0;
+  gap: 16px;
+}
+.today-task-toggle::-webkit-details-marker {
+  display: none;
+}
+.today-task-toggle:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -3px;
+  border-radius: 4px;
+}
+.today-task-toggle > div {
+  min-width: 0;
+}
+.today-task-summary-end {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.today-task-chevron {
+  font-size: 26px;
+  line-height: 1;
+}
+.today-task-card[open] > .today-task-toggle {
+  margin-bottom: 20px;
+}
+.today-task-card[open] > .today-task-toggle .today-task-chevron {
+  transform: rotate(180deg);
+}

@@ -10,6 +10,18 @@ test('Today guides a bounded workday, saves task outcomes and records a check-in
   await page.getByRole('navigation').getByRole('button', { name: 'Today', exact: true }).click();
   await page.getByLabel('Planning provider').selectOption('local');
   await page.getByRole('button', { name: 'Generate today’s plan', exact: true }).click();
+  const cards = page.locator('details.today-task-card');
+  await expect(cards).toHaveCount(3);
+  await expect(cards.first()).not.toHaveAttribute('open');
+  await expect(cards.first().getByText('Deliverable:', { exact: true })).not.toBeVisible();
+  const firstToggle = cards.first().locator('summary.today-task-toggle');
+  await firstToggle.focus();
+  await page.keyboard.press('Enter');
+  await expect(cards.first()).toHaveAttribute('open', '');
+  await expect(cards.first().getByText('Deliverable:', { exact: true })).toBeVisible();
+  await page.keyboard.press('Space');
+  await expect(cards.first()).not.toHaveAttribute('open');
+  for (const toggle of await cards.locator('summary.today-task-toggle').all()) await toggle.click();
   await expect(page.getByRole('button', { name: 'Approve task', exact: true })).toHaveCount(3);
   await expect(
     page.getByRole('heading', { name: 'Step-by-step instructions', exact: true }),
@@ -35,6 +47,7 @@ test('Today guides a bounded workday, saves task outcomes and records a check-in
       exact: true,
     }),
   ).toBeVisible();
+  await cards.last().locator('summary.today-task-toggle').click();
   await expect(
     page.getByRole('heading', { name: 'Step-by-step instructions', exact: true }),
   ).toHaveCount(4);
@@ -74,6 +87,7 @@ test('Today guides a bounded workday, saves task outcomes and records a check-in
   await page.reload();
   await page.getByRole('navigation').getByRole('button', { name: 'Today', exact: true }).click();
   await expect(page.getByText('COMPLETED', { exact: true })).toBeVisible();
+  await cards.first().locator('summary.today-task-toggle').click();
   await page
     .getByRole('button', { name: /^Discuss with CMO/ })
     .first()

@@ -235,16 +235,21 @@ function TaskCard({
     }
   }
   return (
-    <section className="panel">
-      <div className="panel-head">
+    <details className="panel today-task-card">
+      <summary className="panel-head today-task-toggle">
         <div>
           <span className="eyebrow">
             PRIORITY {task.position + 1} · {task.minutes} MIN
           </span>
           <h3 className="today-task-title">{task.title}</h3>
         </div>
-        <span className="badge">{task.status}</span>
-      </div>
+        <span className="today-task-summary-end">
+          <span className="badge">{task.status}</span>
+          <span className="today-task-chevron" aria-hidden="true">
+            ⌄
+          </span>
+        </span>
+      </summary>
       <div className="record-body">
         <p>
           <strong>Deliverable:</strong> {task.deliverable}
@@ -457,7 +462,7 @@ function TaskCard({
           </p>
         )}
       </div>
-    </section>
+    </details>
   );
 }
 function CheckIn({
