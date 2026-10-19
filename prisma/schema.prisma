@@ -219,3 +219,14 @@ model DriveDocument {
 
   @@unique([folderId, fileId])
 }
+
+model SyncRun {
+  id           String    @id @default(cuid())
+  actor        String
+  trigger      String
+  scheduledDay DateTime? @unique @db.Date
+  status       String    @default("RUNNING")
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+  results      Json
+}

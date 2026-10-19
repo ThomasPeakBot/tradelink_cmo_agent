@@ -128,3 +128,7 @@ Read-only X and Instagram reporting is available under **Channels**, with integr
 ## Google Drive knowledge
 
 The **Knowledge base** can import read-only Google Docs, plain-text and Markdown references from the approved TradeLink folder and its subfolders. A dedicated service account shared as Viewer keeps personal Drive authorization separate. Source links/timestamps and bounded excerpts ground CMO answers. See [authorization, limits and retention](docs/DRIVE.md); live access requires credentials and a verified sync.
+
+## Daily sync
+
+Use **Sync all** in the header to fetch fresh provider data; the refresh icon only reloads stored records. Settings shows each full run's results. A separate Railway morning trigger schedules read-only imports at **4:00 a.m. America/New_York**, following daylight saving time. See [schedule, security and recovery](docs/SYNC.md).

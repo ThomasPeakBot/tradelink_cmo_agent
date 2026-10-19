@@ -1884,3 +1884,33 @@ html[data-theme='dark'] .rank {
     flex-shrink: 0;
   }
 }
+.sync-all-control {
+  position: relative;
+}
+.sync-all-notice {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  z-index: 50;
+  width: min(290px, 80vw);
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 4px 20px #0003;
+  line-height: 1.7;
+  font-size: 12px;
+}
+.sync-all-notice button {
+  display: block;
+  margin-top: 7px;
+}
+@media (max-width: 700px) {
+  .sync-all-label {
+    display: none;
+  }
+  .sync-all-control > .btn {
+    padding: 8px;
+  }
+}

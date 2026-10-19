@@ -1,3 +1,4 @@
+import { syncResultsSchema } from './sync-state';
 import { driveConfiguration, tradeLinkFolderId } from './drive';
 import { socialConfiguration, socialSnapshotSchema } from './social';
 import { stripeConfiguration, stripeSnapshotSchema } from './stripe';
@@ -33,6 +34,15 @@ export async function getWorkspace(userId: string) {
     db.report.findMany({ orderBy: { createdAt: 'desc' }, take: 30 }),
     db.chatMessage.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 30 }),
   ]);
+  const syncHistory = (await db.syncRun.findMany({ orderBy: { startedAt: 'desc' }, take: 5 })).map(
+    (r) => ({
+      ...r,
+      startedAt: r.startedAt.toISOString(),
+      completedAt: r.completedAt?.toISOString() ?? null,
+      scheduledDay: r.scheduledDay?.toISOString().slice(0, 10) ?? null,
+      results: syncResultsSchema.parse(r.results),
+    }),
+  );
   const driveConfig = driveConfiguration();
   const driveState = await db.driveSync.findUnique({ where: { folderId: tradeLinkFolderId } });
   const driveAvailable = driveConfig.configured && !!driveState?.active;
@@ -149,6 +159,7 @@ export async function getWorkspace(userId: string) {
   });
   return {
     company: goal,
+    syncHistory,
     stripe,
     social,
     drive,

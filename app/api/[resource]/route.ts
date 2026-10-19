@@ -1,3 +1,4 @@
+import { syncAll, SyncBusyError } from '@/lib/sync-all';
 import { syncDrive } from '@/lib/drive-sync';
 import { DriveReadError } from '@/lib/drive';
 import { syncSocial } from '@/lib/social-sync';
@@ -65,7 +66,10 @@ export async function POST(request: Request, { params }: Route) {
       entityId: string,
       details: string,
     ) => tx.auditLog.create({ data: { actor: user.email, action, entityType, entityId, details } });
-    if (resource === 'drive-sync') {
+    if (resource === 'sync-all') {
+      z.object({}).strict().parse(body);
+      return NextResponse.json(await syncAll(user.email, 'MANUAL'));
+    } else if (resource === 'drive-sync') {
       z.object({}).strict().parse(body);
       await syncDrive(user.email);
     } else if (resource === 'social-sync') {
@@ -311,6 +315,8 @@ export async function POST(request: Request, { params }: Route) {
       await refreshAlerts(user.id);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof SyncBusyError)
+      return NextResponse.json({ error: error.message }, { status: 429 });
     if (error instanceof DriveReadError)
       return NextResponse.json(
         { error: error.message, code: error.code },

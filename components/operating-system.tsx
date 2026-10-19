@@ -513,6 +513,7 @@ export function OperatingSystem() {
             <strong>{tab}</strong>
           </div>
           <div className="topbar-right">
+            <SyncAllButton mutate={mutate} />
             <ThemeToggle />
             <span className="connection">
               <i />
@@ -965,6 +966,38 @@ export function OperatingSystem() {
                 ]}
                 onSave={(v) => mutate('company', v)}
               />
+              <Panel title="Sync schedule & history">
+                <div className="record-body">
+                  <p>
+                    Automatic read-only sync: daily at 4:00 a.m. America/New_York (Eastern),
+                    following daylight saving time. Configured Stripe, X, Instagram and Drive
+                    connections are included.
+                  </p>
+                  <p>
+                    The refresh icon only reloads the screen. Use Sync all to fetch new provider
+                    data. Recent per-provider requests may be skipped during their cooldown.
+                  </p>
+                  {data.syncHistory.length ? (
+                    data.syncHistory.map((run) => (
+                      <div className="drive-document" key={run.id}>
+                        <p>
+                          <strong>
+                            {run.trigger} · {run.status}
+                          </strong>{' '}
+                          · {new Date(run.startedAt).toLocaleString()}
+                        </p>
+                        {run.results.map((result) => (
+                          <p key={result.provider}>
+                            {result.provider}: <strong>{result.status}</strong> — {result.message}
+                          </p>
+                        ))}
+                      </div>
+                    ))
+                  ) : (
+                    <p>No full sync has run yet.</p>
+                  )}
+                </div>
+              </Panel>
               <Panel title="Provider & integration status">
                 <div className="record-body">
                   <p>
@@ -2119,5 +2152,43 @@ function DriveKnowledge({ data, mutate }: { data: Data; mutate: Mutate }) {
         ))}
       </div>
     </Panel>
+  );
+}
+
+function SyncAllButton({ mutate }: { mutate: Mutate }) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  return (
+    <div className="sync-all-control">
+      <button
+        className={`btn ${busy ? 'spin' : ''}`}
+        aria-label="Sync all data"
+        disabled={busy}
+        title="Fetch fresh data from all configured providers"
+        onClick={async () => {
+          setBusy(true);
+          setMessage('');
+          try {
+            await mutate('sync-all', {});
+            setMessage('Sync finished. See Settings for each provider’s result.');
+          } catch (error) {
+            setMessage(error instanceof Error ? error.message : 'Sync failed. Check Settings.');
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <RefreshCw size={15} />
+        <span className="sync-all-label">{busy ? 'Syncing…' : 'Sync all'}</span>
+      </button>
+      {message && (
+        <div className="sync-all-notice" role="status">
+          {message}
+          <button className="text-btn" onClick={() => setMessage('')}>
+            Dismiss
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

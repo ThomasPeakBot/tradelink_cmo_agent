@@ -43,3 +43,7 @@ Railway's remote production build passed, the application SQL migration and labe
 - All 12 browser tests passed after fixing a mobile breadcrumb overflow exposed by the new Knowledge base check. The dark Knowledge base screenshot was visually inspected; screenshots remain ignored by Git.
 - New tables are `DriveSync` and `DriveDocument`. No manual knowledge or existing operating records are rewritten by the migration or importer.
 - Railway's Drive credential was absent. No live folder access, imported file count or account authorization is claimed. A dedicated service account, folder Viewer sharing and a verified first sync remain required.
+
+## 2026-10-18 — Full sync and daily Eastern schedule
+
+Lint, TypeScript, production build, 83 unit/route tests, 15 database integration tests and all 13 browser tests passed. New tests cover DST/timezone mapping, private cron authentication, provider failure isolation, durable daily deduplication, orphan recovery, PostgreSQL overlap protection and the manual Sync all UI. Local fixture tests never read live platform credentials or reset the production database. `SyncRun` is added by a new migration; existing data is preserved.
