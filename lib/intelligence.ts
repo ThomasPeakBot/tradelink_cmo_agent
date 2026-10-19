@@ -1,3 +1,4 @@
+import { driveEvidence } from './drive-evidence';
 import { hasDemoContext } from './demo';
 import type { Workspace } from './workspace';
 import { openAIKey } from './config';
@@ -22,7 +23,7 @@ export class ManualIntegrationProvider<T> implements IntegrationProvider<T> {
     return [];
   }
 }
-function evidence(w: Workspace) {
+function evidence(w: Workspace, prompt: string) {
   return {
     company: w.company,
     asOf: new Date().toISOString(),
@@ -44,6 +45,7 @@ function evidence(w: Workspace) {
     experiments: w.experiments,
     priorities: w.priorities,
     companyKnowledge: w.knowledge,
+    googleDriveKnowledge: driveEvidence(w.drive, prompt),
     institutionalMemory: w.memories,
     decisions: w.approvals.filter((a) => a.status !== 'PENDING'),
     activeAlerts: w.alerts.filter((a) => !a.acknowledged),
@@ -118,7 +120,14 @@ export class LocalIntelligenceProvider implements IntelligenceProvider {
         : '';
     return {
       provider: 'local-evidence',
-      content: `# ${type === 'CHAT' ? 'CMO evidence response' : type === 'DAILY' ? 'Daily Growth Brief' : type === 'WEEKLY' ? 'Weekly CMO Review' : 'Monthly Growth Plan'}\n\nLOCAL EVIDENCE MODE · ${includesDemo ? 'Includes DEMO data. Do not use as real business performance.' : w.stripe.lastSync ? 'Uses stored Stripe snapshots and other supplied evidence.' : 'Uses stored manual data.'}${requested}\n\n## Pace to ${goal}\n${pace}\n\n## Highest-priority growth actions\n${actions}\n\n## Channel evidence (last 30 calendar days)\n${channels}\n\n## Stored Stripe billing evidence\n${billingEvidence}\n\n## Billing definitions\n${w.stripe.lastSync ? 'Stripe subscribers are unique customers with active, unpaused, positive recurring-price subscriptions, before discounts. Gross MRR is before discounts, refunds, credits and fees; inclusive-tax prices may include tax. Paid invoice amount is not net revenue. New/churned are observed set changes between consecutive UTC-date snapshots, not lifecycle events. Missing dates and intra-day changes are not reconstructed.' : 'No Stripe snapshot available.'}\n\n## Forecast and assumptions\n${forecast}\n\n## Social reporting\n${w.social.map((c) => (c.snapshot ? `${c.label} @${c.snapshot.username}: ${c.snapshot.followers ?? 'unavailable'} followers, ${c.snapshot.posts.length} sampled posts. Captured ${c.lastSync}. ${c.snapshot.notes.join(' ')}` : `${c.label}: no successful social sync.`)).join('\n')}\n\n## Company knowledge\n${facts}\n\n## Institutional memory\n${memories}\n\n## Human decisions\n${decisions}\n\n## Operating plan\n${cadence}\n\n## Approval boundary\nNo external action has been taken. Spending, campaign launches, publishing, and integrations require a human approval request. Approval records intent only; V1 cannot execute external actions.`,
+      content: `# ${type === 'CHAT' ? 'CMO evidence response' : type === 'DAILY' ? 'Daily Growth Brief' : type === 'WEEKLY' ? 'Weekly CMO Review' : 'Monthly Growth Plan'}\n\nLOCAL EVIDENCE MODE · ${includesDemo ? 'Includes DEMO data. Do not use as real business performance.' : w.stripe.lastSync ? 'Uses stored Stripe snapshots and other supplied evidence.' : 'Uses stored manual data.'}${requested}\n\n## Pace to ${goal}\n${pace}\n\n## Highest-priority growth actions\n${actions}\n\n## Channel evidence (last 30 calendar days)\n${channels}\n\n## Stored Stripe billing evidence\n${billingEvidence}\n\n## Billing definitions\n${w.stripe.lastSync ? 'Stripe subscribers are unique customers with active, unpaused, positive recurring-price subscriptions, before discounts. Gross MRR is before discounts, refunds, credits and fees; inclusive-tax prices may include tax. Paid invoice amount is not net revenue. New/churned are observed set changes between consecutive UTC-date snapshots, not lifecycle events. Missing dates and intra-day changes are not reconstructed.' : 'No Stripe snapshot available.'}\n\n## Forecast and assumptions\n${forecast}\n\n## Social reporting\n${w.social.map((c) => (c.snapshot ? `${c.label} @${c.snapshot.username}: ${c.snapshot.followers ?? 'unavailable'} followers, ${c.snapshot.posts.length} sampled posts. Captured ${c.lastSync}. ${c.snapshot.notes.join(' ')}` : `${c.label}: no successful social sync.`)).join('\n')}\n\n## Company knowledge\n${facts}\n\n## Drive reference documents\n${
+        driveEvidence(w.drive, prompt)
+          .documents.map(
+            (d) =>
+              `• ${d.name}: ${d.content.slice(0, 500)} [Source: ${d.sourceUrl}; modified ${d.modifiedAt}; synced ${d.syncedAt}${d.excerpted ? '; excerpt only' : ''}]`,
+          )
+          .join('\n') || 'No currently available Drive reference documents.'
+      }\n\n## Institutional memory\n${memories}\n\n## Human decisions\n${decisions}\n\n## Operating plan\n${cadence}\n\n## Approval boundary\nNo external action has been taken. Spending, campaign launches, publishing, and integrations require a human approval request. Approval records intent only; V1 cannot execute external actions.`,
     };
   }
 }
@@ -146,7 +155,7 @@ export class OpenAIIntelligenceProvider implements IntelligenceProvider {
             content: JSON.stringify({
               task: request.type,
               question: request.prompt,
-              storedEvidence: evidence(request.context),
+              storedEvidence: evidence(request.context, request.prompt),
             }),
           },
         ],

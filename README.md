@@ -124,3 +124,7 @@ Use the **Dark mode / Light mode** button in the workspace header or login page.
 ## Social reporting
 
 Read-only X and Instagram reporting is available under **Channels**, with integration status in **Settings**. It stores scoped daily snapshots and provides evidence to CMO chat and briefs; social engagement never counts as paid-subscriber attribution. See [setup and limitations](docs/SOCIAL.md). Platform credentials and a verified first sync are required before calling either account connected.
+
+## Google Drive knowledge
+
+The **Knowledge base** can import read-only Google Docs, plain-text and Markdown references from the approved TradeLink folder and its subfolders. A dedicated service account shared as Viewer keeps personal Drive authorization separate. Source links/timestamps and bounded excerpts ground CMO answers. See [authorization, limits and retention](docs/DRIVE.md); live access requires credentials and a verified sync.

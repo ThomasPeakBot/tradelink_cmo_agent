@@ -1849,3 +1849,38 @@ html[data-theme='dark'] .rank {
   border: 1px solid var(--line);
   border-radius: 8px;
 }
+.drive-document {
+  margin-top: 18px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.drive-document summary {
+  cursor: pointer;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.drive-content {
+  max-height: 280px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .breadcrumb {
+    min-width: 0;
+    gap: 6px;
+  }
+  .breadcrumb > span,
+  .breadcrumb > svg {
+    display: none;
+  }
+  .breadcrumb strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .topbar-right {
+    flex-shrink: 0;
+  }
+}

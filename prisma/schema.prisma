@@ -197,3 +197,25 @@ model SocialSnapshot {
 
   @@unique([provider, accountId, date])
 }
+
+model DriveSync {
+  folderId   String   @id
+  folderName String
+  syncedAt   DateTime
+  active     Boolean  @default(true)
+  skipped    Int      @default(0)
+}
+
+model DriveDocument {
+  id         String   @id @default(cuid())
+  folderId   String
+  fileId     String
+  name       String
+  path       String
+  modifiedAt DateTime
+  syncedAt   DateTime
+  content    String
+  truncated  Boolean  @default(false)
+
+  @@unique([folderId, fileId])
+}

@@ -35,3 +35,11 @@ Railway's remote production build passed, the application SQL migration and labe
 - 10 PostgreSQL integration tests passed against the disposable local `_test` database, including two social snapshot/CMO evidence tests. The new migration adds only `SocialSnapshot`.
 - All 11 browser tests passed in a sequential run, including unconfigured social cards, dark theme and mobile overflow checks. An earlier run alongside build activity had two navigation/theme failures; the clean sequential run passed. Screenshot `test-results/social-dark.png` was visually inspected and is ignored by Git.
 - No live X or Instagram sync was claimed: provider credentials were absent. Expected usernames are `tradelink_pb`; real platform authorization and reconciliation remain required.
+
+## 2026-10-18 — Scoped Google Drive references
+
+- Lint, TypeScript and production build passed; 78 unit/route tests passed, including nine Drive adapter/evidence/authorization tests.
+- All 12 PostgreSQL integration tests passed on the disposable local `_test` database. The Drive fixtures cover atomic replacement, manual-knowledge preservation, cooldown, source grounding and disabling direct retrieval after failed access.
+- All 12 browser tests passed after fixing a mobile breadcrumb overflow exposed by the new Knowledge base check. The dark Knowledge base screenshot was visually inspected; screenshots remain ignored by Git.
+- New tables are `DriveSync` and `DriveDocument`. No manual knowledge or existing operating records are rewritten by the migration or importer.
+- Railway's Drive credential was absent. No live folder access, imported file count or account authorization is claimed. A dedicated service account, folder Viewer sharing and a verified first sync remain required.

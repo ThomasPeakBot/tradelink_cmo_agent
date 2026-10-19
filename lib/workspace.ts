@@ -1,3 +1,4 @@
+import { driveConfiguration, tradeLinkFolderId } from './drive';
 import { socialConfiguration, socialSnapshotSchema } from './social';
 import { stripeConfiguration, stripeSnapshotSchema } from './stripe';
 import { stripeMetrics } from './stripe-evidence';
@@ -32,6 +33,30 @@ export async function getWorkspace(userId: string) {
     db.report.findMany({ orderBy: { createdAt: 'desc' }, take: 30 }),
     db.chatMessage.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 30 }),
   ]);
+  const driveConfig = driveConfiguration();
+  const driveState = await db.driveSync.findUnique({ where: { folderId: tradeLinkFolderId } });
+  const driveAvailable = driveConfig.configured && !!driveState?.active;
+  const driveDocuments = driveAvailable
+    ? await db.driveDocument.findMany({
+        where: { folderId: tradeLinkFolderId },
+        orderBy: { modifiedAt: 'desc' },
+        take: 50,
+      })
+    : [];
+  const drive = {
+    ...driveConfig,
+    available: driveAvailable,
+    folderName: driveState?.folderName ?? null,
+    lastSync: driveState?.syncedAt.toISOString() ?? null,
+    failed: !!driveState && !driveState.active,
+    skipped: driveState?.skipped ?? 0,
+    documents: driveDocuments.map((d) => ({
+      ...d,
+      modifiedAt: d.modifiedAt.toISOString(),
+      syncedAt: d.syncedAt.toISOString(),
+      sourceUrl: `https://drive.google.com/file/d/${d.fileId}/view`,
+    })),
+  };
   const social = await Promise.all(
     (['x', 'instagram'] as const).map(async (provider) => {
       const config = socialConfiguration(provider);
@@ -126,6 +151,7 @@ export async function getWorkspace(userId: string) {
     company: goal,
     stripe,
     social,
+    drive,
     metrics,
     channels,
     experiments,

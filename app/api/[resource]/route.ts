@@ -1,3 +1,5 @@
+import { syncDrive } from '@/lib/drive-sync';
+import { DriveReadError } from '@/lib/drive';
 import { syncSocial } from '@/lib/social-sync';
 import { socialProviderSchema, SocialReadError } from '@/lib/social';
 import { syncStripe } from '@/lib/stripe-sync';
@@ -63,7 +65,10 @@ export async function POST(request: Request, { params }: Route) {
       entityId: string,
       details: string,
     ) => tx.auditLog.create({ data: { actor: user.email, action, entityType, entityId, details } });
-    if (resource === 'social-sync') {
+    if (resource === 'drive-sync') {
+      z.object({}).strict().parse(body);
+      await syncDrive(user.email);
+    } else if (resource === 'social-sync') {
       const { provider } = z.object({ provider: socialProviderSchema }).strict().parse(body);
       await syncSocial(user.email, provider);
     } else if (resource === 'stripe-sync') {
@@ -306,6 +311,11 @@ export async function POST(request: Request, { params }: Route) {
       await refreshAlerts(user.id);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof DriveReadError)
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: error.code === 'busy' ? 429 : 400 },
+      );
     if (error instanceof SocialReadError)
       return NextResponse.json(
         { error: error.message, code: error.code },

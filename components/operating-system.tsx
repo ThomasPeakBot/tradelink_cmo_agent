@@ -1343,6 +1343,7 @@ function Knowledge({ data, mutate }: { data: Data; mutate: Mutate }) {
   const k = data.knowledge.find((k) => k.id === editing);
   return (
     <>
+      <DriveKnowledge data={data} mutate={mutate} />
       <div className="cards-grid">
         {data.knowledge.map((k) => (
           <Panel key={k.id} title={k.title} action={<Demo value={k.isDemo} />}>
@@ -2028,5 +2029,95 @@ function SocialReporting({ data, mutate }: { data: Data; mutate: Mutate }) {
         })}
       </div>
     </>
+  );
+}
+
+function DriveKnowledge({ data, mutate }: { data: Data; mutate: Mutate }) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const drive = data.drive;
+  return (
+    <Panel
+      title="Google Drive reference folder"
+      subtitle={drive.folderName || 'TradeLink folder — authorization required'}
+    >
+      <div className="record-body">
+        <p>
+          <a href={drive.folderUrl} target="_blank" rel="noopener noreferrer" className="text-btn">
+            Open the approved Drive folder <ArrowRight size={14} />
+          </a>
+        </p>
+        <p>
+          Read-only import of Google Docs, plain text and Markdown, including nested folders. PDFs,
+          Word files, Sheets, Slides, images and shortcuts are skipped. Edit originals in Drive,
+          then sync here.
+        </p>
+        <p>
+          {drive.lastSync
+            ? `Last successful sync: ${new Date(drive.lastSync).toLocaleString()}. ${drive.skipped} unsupported files skipped.`
+            : 'No successful Drive import yet.'}
+        </p>
+        {!drive.configured && (
+          <p>
+            Share this private folder with the dedicated service-account email as Viewer, then save
+            its JSON credential in Railway. Do not make the folder public.
+          </p>
+        )}
+        {drive.failed && (
+          <p className="error">
+            Last import failed. Previously imported content is retained but excluded from new CMO
+            answers until a successful sync.
+          </p>
+        )}
+        <button
+          className="btn primary"
+          disabled={!drive.configured || busy}
+          onClick={async () => {
+            setBusy(true);
+            setMessage('');
+            try {
+              await mutate('drive-sync', {});
+              setMessage('Drive references synced.');
+            } catch (error) {
+              setMessage(error instanceof Error ? error.message : 'Drive sync failed.');
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? 'Reading Drive…' : 'Sync Drive read-only'}
+        </button>
+        {message && <p role="status">{message}</p>}
+        <p>
+          CMO answers use up to eight relevant document excerpts, with source links. This is not a
+          full-folder review. Imported content is sent to OpenAI when you choose that provider.
+        </p>
+        {drive.available && !drive.documents.length && (
+          <p>No supported documents were found in the last successful import.</p>
+        )}
+        {drive.documents.map((doc) => (
+          <details className="drive-document" key={doc.fileId}>
+            <summary>
+              {doc.name}
+              {doc.truncated ? ' · import truncated at 20,000 characters' : ''}
+            </summary>
+            <p>
+              <a
+                href={doc.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-btn"
+              >
+                Open source document <ArrowRight size={13} />
+              </a>
+              <small className="block">
+                {doc.path} · Source modified {new Date(doc.modifiedAt).toLocaleString()}
+              </small>
+            </p>
+            <div className="drive-content">{doc.content || '(Empty document)'}</div>
+          </details>
+        ))}
+      </div>
+    </Panel>
   );
 }
