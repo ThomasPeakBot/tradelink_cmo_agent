@@ -49,7 +49,7 @@ async function main() {
           syncedAt: document.syncedAt.toISOString(),
           reviewedAt: new Date().toISOString(),
           coverage: document.truncated
-            ? 'Imported text truncated at 20,000 characters'
+            ? 'Previously truncated import; limited source coverage'
             : 'All imported document text reviewed',
           ...review,
         }),

@@ -235,12 +235,12 @@ export class DriveReadOnlyProvider {
                     { alt: 'media', supportsAllDrives: 'true' },
                     100_000,
                   );
-            const content = raw.slice(0, 20000);
+            const content = raw;
             totalChars += content.length;
-            if (totalChars > 150000)
+            if (totalChars > 500000)
               throw new DriveReadError(
                 'limit',
-                'The folder exceeds the 150,000-character import budget. No partial import was saved.',
+                'The folder exceeds the 500,000-character import budget. No partial import was saved.',
               );
             result.documents.push({
               fileId: file.id,

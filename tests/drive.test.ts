@@ -118,17 +118,17 @@ it('rejects outside-folder files, wrong roots and incomplete searches', async ()
     code: 'unavailable',
   });
 });
-it('marks excerpted imports and rejects oversized or inaccessible files safely', async () => {
+it('retains complete supported text and rejects oversized or inaccessible files safely', async () => {
   const setup = () =>
     vi
       .fn()
       .mockResolvedValueOnce(token())
       .mockResolvedValueOnce(root())
       .mockResolvedValueOnce(json({ files: [doc] }));
-  const truncated = setup().mockResolvedValueOnce(new Response('x'.repeat(21000)));
-  expect((await new DriveReadOnlyProvider(truncated).fetchData()).documents[0]).toMatchObject({
-    truncated: true,
-    content: 'x'.repeat(20000),
+  const complete = setup().mockResolvedValueOnce(new Response('x'.repeat(21000)));
+  expect((await new DriveReadOnlyProvider(complete).fetchData()).documents[0]).toMatchObject({
+    truncated: false,
+    content: 'x'.repeat(21000),
   });
   const oversized = setup().mockResolvedValueOnce(new Response('x'.repeat(100001)));
   await expect(new DriveReadOnlyProvider(oversized).fetchData()).rejects.toMatchObject({
