@@ -2019,3 +2019,21 @@ html[data-theme='dark'] .rank {
   background: var(--paper);
   border-radius: 8px;
 }
+
+.task-thread {
+  max-height: 560px;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  margin: 16px 0;
+}
+.task-discussion form {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+}
+.task-discussion .message {
+  margin: 12px 0;
+}
+.task-discussion textarea {
+  width: 100%;
+}

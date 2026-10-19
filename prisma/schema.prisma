@@ -163,6 +163,7 @@ model Report {
 }
 
 model ChatMessage {
+  taskId    String?
   id        String   @id @default(cuid())
   role      String
   content   String
@@ -172,6 +173,7 @@ model ChatMessage {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+  @@index([userId, taskId, createdAt])
 }
 
 // Aggregate billing evidence plus pseudonymous customer IDs for observed daily movement.

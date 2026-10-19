@@ -1,3 +1,4 @@
+import { discussTask } from '@/lib/task-discussion';
 import { TodayGuideError } from '@/lib/today-guidance';
 import { syncXAds } from '@/lib/x-ads-sync';
 import { XAdsReadError } from '@/lib/x-ads';
@@ -262,6 +263,7 @@ export async function POST(request: Request, { params }: Route) {
           prompt: z.string().trim().min(1).max(4000),
           type: z.enum(['CHAT', 'DAILY', 'WEEKLY', 'MONTHLY']),
           mode: z.enum(['local', 'auto']).default('auto'),
+          taskId: z.string().min(1).max(100).optional(),
         })
         .parse(body);
       if ((resource === 'chat') !== (input.type === 'CHAT'))
@@ -284,6 +286,11 @@ export async function POST(request: Request, { params }: Route) {
           details: 'Requested grounded briefing',
         },
       });
+      if (input.taskId) {
+        if (input.type !== 'CHAT') throw new TodayError('Task discussions require chat.');
+        await discussTask(user, input.taskId, input.prompt, input.mode);
+        return NextResponse.json({ ok: true });
+      }
       const workspace = await getWorkspace(user.id);
       const result = await intelligenceProvider(input.mode).generate({
         type: input.type,

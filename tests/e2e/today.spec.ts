@@ -38,6 +38,19 @@ test('Today guides a bounded workday, saves task outcomes and records a check-in
   await expect(
     page.getByRole('heading', { name: 'Step-by-step instructions', exact: true }),
   ).toHaveCount(4);
+  await page.getByRole('button', { name: 'Discuss with CMO', exact: true }).first().click();
+  await page
+    .getByLabel('Ask about this task', { exact: true })
+    .fill('Can you explain the first step?');
+  await page.getByRole('button', { name: 'Ask CMO about this task', exact: true }).click();
+  await expect(page.getByRole('log')).toContainText('Can you explain the first step?');
+  await expect(page.getByRole('log')).toContainText('Local evidence mode');
+  await page.getByText('Save a confirmed clarification to CMO memory', { exact: true }).click();
+  await page
+    .getByLabel('Confirmed clarification', { exact: true })
+    .fill('Prepare drafts for review before scheduling any posts.');
+  await page.getByRole('button', { name: 'Save clarification to memory', exact: true }).click();
+  await expect(page.getByText('Clarification saved to CMO memory.', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Approve task', exact: true }).first().click();
   await page
     .getByLabel('Observed outcome')
@@ -55,10 +68,17 @@ test('Today guides a bounded workday, saves task outcomes and records a check-in
     .getByLabel('Blockers or work to carry forward')
     .fill('Web analytics connection pending.');
   await page.getByRole('button', { name: 'Save check-in to memory', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Check-in saved');
+  await expect(page.getByRole('status').filter({ hasText: 'Check-in saved' })).toContainText(
+    'Check-in saved',
+  );
   await page.reload();
   await page.getByRole('navigation').getByRole('button', { name: 'Today', exact: true }).click();
   await expect(page.getByText('COMPLETED', { exact: true })).toBeVisible();
+  await page
+    .getByRole('button', { name: /^Discuss with CMO/ })
+    .first()
+    .click();
+  await expect(page.getByRole('log')).toContainText('Can you explain the first step?');
   await page.screenshot({
     path: 'test-results/today-desktop.png',
     fullPage: true,

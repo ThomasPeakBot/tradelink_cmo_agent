@@ -36,7 +36,11 @@ export async function getWorkspace(userId: string) {
     db.auditLog.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
     db.alert.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
     db.report.findMany({ orderBy: { createdAt: 'desc' }, take: 30 }),
-    db.chatMessage.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 30 }),
+    db.chatMessage.findMany({
+      where: { userId, taskId: null },
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+    }),
   ]);
   const adsConfig = xAdsConfiguration();
   const adsRow = adsConfig.accountId
@@ -62,12 +66,32 @@ export async function getWorkspace(userId: string) {
     take: 7,
     include: { tasks: { orderBy: { position: 'asc' } } },
   });
+  const discussions = new Map(
+    await Promise.all(
+      plans
+        .flatMap((p) => p.tasks)
+        .map(
+          async (task) =>
+            [
+              task.id,
+              (
+                await db.chatMessage.findMany({
+                  where: { userId, taskId: task.id },
+                  orderBy: { createdAt: 'desc' },
+                  take: 30,
+                })
+              ).reverse(),
+            ] as const,
+        ),
+    ),
+  );
   const dayPlans = plans.map((p) => ({
     ...p,
     date: p.date.toISOString().slice(0, 10),
     warnings: z.array(z.string()).parse(p.warnings),
     tasks: p.tasks.map((t) => ({
       ...t,
+      discussion: discussions.get(t.id) ?? [],
       guide: t.guide ? todayGuideSchema.parse(t.guide) : null,
       evidence: z.array(z.string()).parse(t.evidence),
     })),

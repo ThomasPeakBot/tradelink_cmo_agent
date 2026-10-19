@@ -1,5 +1,6 @@
 'use client';
 import { useState, type FormEvent } from 'react';
+import { TaskDiscussion } from './task-discussion';
 import type { Workspace } from '@/lib/workspace';
 type Json<T> = T extends Date
   ? string
@@ -172,7 +173,7 @@ export function Today({ data, mutate }: { data: Json<Workspace>; mutate: Mutate 
           </section>
           {plan.tasks.map((task) => (
             <TaskCard
-              key={`${task.id}:${plan.version}`}
+              key={task.id}
               task={task}
               plan={plan}
               historical={historical}
@@ -224,6 +225,9 @@ function TaskCard({
     setError('');
     try {
       await mutate('today', { planId: plan.id, version: plan.version, taskId: task.id, ...values });
+      setDeferring(false);
+      setEditing(false);
+      setReason('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not update task.');
     } finally {
@@ -268,6 +272,7 @@ function TaskCard({
             ))}
           </small>
         </p>
+        <TaskDiscussion task={task} mutate={mutate} />
         {task.guide ? (
           <TaskGuide guide={task.guide} />
         ) : !historical && task.status !== 'COMPLETED' ? (

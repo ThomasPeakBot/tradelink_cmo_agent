@@ -118,3 +118,31 @@ describe('intelligence provider contracts', () => {
     ).rejects.toThrow('empty response');
   });
 });
+
+it('grounds conversational clarification in the selected task and its own thread', async () => {
+  const mock = vi
+    .fn()
+    .mockResolvedValue(
+      new Response(
+        JSON.stringify({ choices: [{ message: { content: 'Here is a concrete example.' } }] }),
+      ),
+    );
+  vi.stubGlobal('fetch', mock);
+  await new OpenAIIntelligenceProvider().generate({
+    type: 'CHAT',
+    prompt: 'Explain step two',
+    context,
+    taskDiscussion: {
+      task: { id: 'task-1', title: 'Referral brief', guide: { steps: ['Prepare baseline'] } },
+      messages: [{ role: 'user', content: 'Earlier clarification' }],
+    },
+  });
+  const payload = JSON.parse(mock.mock.calls[0][1].body);
+  const evidence = JSON.parse(payload.messages[1].content);
+  expect(evidence.selectedTask.title).toBe('Referral brief');
+  expect(evidence.storedEvidence.recentConversation).toEqual([
+    { role: 'user', content: 'Earlier clarification' },
+  ]);
+  expect(payload.messages[0].content).toContain('directly answer the actual question');
+  expect(payload.tools).toBeUndefined();
+});
