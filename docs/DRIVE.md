@@ -38,3 +38,7 @@ When OpenAI is selected, selected document text is sent to OpenAI along with the
 Only authenticated ADMIN users can initiate a same-origin POST sync. Client-selected folders and extra request-body fields are rejected. A PostgreSQL-backed three-minute lease limits repeated/concurrent requests across replicas. Request/success/sanitized-failure audits contain no keys, OAuth tokens, document text or raw upstream errors. There is no auto-refresh token storage, background job, publishing or file modification/deletion API.
 
 Unit fixtures verify JWT signature/read-only scope, non-delegation, fixed origins, descendant boundaries, pagination, unsupported types, missing permissions, size limits, redaction and evidence selection. Database fixtures verify atomic replacement, preservation of manual knowledge, cooldown and fail-closed retrieval. Browser tests cover setup status and mobile/dark rendering. Live verification requires the owner's account authorization above.
+
+## Live activation
+
+Owner-approved activation was verified on October 18, 2026 (Eastern). The first successful folder import stored **10 supported documents** and skipped **45 unsupported files**. The configured adapter is now included in Sync all and the daily 4am Eastern schedule. The first import used a one-time deployment verification command that was subsequently removed. Keep the existing working credential; no replacement or regeneration is needed. File-type support and excerpt limits above still apply.
