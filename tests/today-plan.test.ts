@@ -71,6 +71,9 @@ it('uses structured OpenAI output, stored evidence and no execution tools', asyn
   expect(result.provider).toContain('openai:');
   const body = JSON.parse(fetcher.mock.calls[0][1].body);
   expect(body.response_format.type).toBe('json_schema');
+  expect(
+    body.response_format.json_schema.schema.properties.tasks.items.properties.evidence.items.enum,
+  ).toContain('growth');
   expect(body.tools).toBeUndefined();
   expect(JSON.stringify(body)).not.toContain('fixture-key');
   expect(JSON.stringify(body)).toContain('storedEvidence');
@@ -86,4 +89,21 @@ it('does not disguise provider failures or invalid output as a successful local 
       vi.fn().mockResolvedValue(new Response('{}', { status: 429 })),
     ),
   ).rejects.toThrow('generation failed');
+});
+it('keeps the highest-priority real experiment after a stale-data reconciliation task', async () => {
+  const experiment = {
+    id: 'highest-priority',
+    title: 'Test the referral offer',
+    successMetric: 'Measure qualified referral conversion',
+    isDemo: false,
+  };
+  const context = {
+    ...workspace,
+    experiments: [experiment],
+    priorities: [experiment],
+  } as unknown as Workspace;
+  const { draft } = await generateTodayDraft(context, 270, 'local');
+  expect(draft.tasks[0].title).toBe('Reconcile subscriber and revenue evidence');
+  expect(draft.tasks[1].title).toBe('Test the referral offer');
+  expect(draft.tasks[1].evidence).toEqual(['experiment:highest-priority']);
 });

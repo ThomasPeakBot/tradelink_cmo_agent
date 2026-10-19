@@ -53,6 +53,7 @@ function localDraft(w: Workspace, budget: number): TodayDraft {
   const experiments = w.priorities.filter((e) => !e.isDemo);
   const stale = !w.summary.latest || w.summary.dataAgeDays === null || w.summary.dataAgeDays > 1;
   const first = experiments[0];
+  const second = experiments[stale ? 0 : 1];
   return {
     summary: `A provisional plan grounded in stored evidence. Subscriber pace: ${w.summary.status.toLowerCase()}. Reserve 20 minutes to review evidence and 20 minutes to record outcomes.`,
     warnings: [
@@ -89,16 +90,16 @@ function localDraft(w: Workspace, budget: number): TodayDraft {
             : ['workspace', 'growth'],
       },
       {
-        title: experiments[1]?.title || 'Prepare one focused growth experiment',
+        title: second?.title || 'Prepare one focused growth experiment',
         minutes: b,
         deliverable:
-          experiments[1]?.successMetric ||
+          second?.successMetric ||
           'A written hypothesis, audience, channel, baseline, success criterion and review date.',
         successMetric:
           'One reviewable experiment brief with a measurable outcome; no external action executed.',
         rationale:
           'Convert the growth hypothesis into a bounded test rather than spread effort across many channels.',
-        evidence: experiments[1] ? [`experiment:${experiments[1].id}`] : ['workspace', 'growth'],
+        evidence: second ? [`experiment:${second.id}`] : ['workspace', 'growth'],
       },
       {
         title: 'Review channel evidence and draft the next creative brief',
@@ -128,13 +129,14 @@ export async function generateTodayDraft(
       draft: validateTodayDraft(localDraft(w, budget), w, budget),
       provider: 'local-evidence',
     };
+  const allowedEvidenceIds = [...evidenceIds(w)];
   const properties = {
     title: { type: 'string' },
     minutes: { type: 'integer', minimum: 15, maximum: 180 },
     deliverable: { type: 'string' },
     successMetric: { type: 'string' },
     rationale: { type: 'string' },
-    evidence: { type: 'array', items: { type: 'string' } },
+    evidence: { type: 'array', items: { type: 'string', enum: allowedEvidenceIds } },
   };
   try {
     const response = await fetcher('https://api.openai.com/v1/chat/completions', {
@@ -186,7 +188,7 @@ export async function generateTodayDraft(
               maximumTotalTaskMinutes: budget - 40,
               request:
                 'Plan the highest-priority use of my 4–5 hours today. Include a Higgsfield creative brief only if supported by the growth priorities. All actions begin as proposals.',
-              allowedEvidenceIds: [...evidenceIds(w)],
+              allowedEvidenceIds,
               storedEvidence: companyEvidence(
                 w,
                 'daily priorities growth constraints experiments content affiliate retention',
