@@ -1,3 +1,4 @@
+import { runAffiliateEmail } from './affiliate-email/automation';
 import { syncXAds } from './x-ads-sync';
 import { xAdsConfiguration } from './x-ads';
 import { Client } from 'pg';
@@ -133,6 +134,17 @@ export async function syncAll(actor: string, trigger: 'MANUAL' | 'SCHEDULED', no
         });
       }
     }
+    if (!results.some((r) => r.provider === 'affiliate_email')) {
+      try {
+        results.push({ provider: 'affiliate_email', ...(await runAffiliateEmail(actor)) });
+      } catch {
+        results.push({
+          provider: 'affiliate_email',
+          status: 'FAILED',
+          message: 'Affiliate email automation failed; inspect delivery status before any retry.',
+        });
+      }
+    }
     const status = batchStatus(results);
     const completed = await db.$transaction(async (tx) => {
       const value = await tx.syncRun.update({
@@ -145,7 +157,7 @@ export async function syncAll(actor: string, trigger: 'MANUAL' | 'SCHEDULED', no
           action: 'SYNC_ALL_COMPLETE',
           entityType: 'SyncRun',
           entityId: run.id,
-          details: `${trigger} sync ${status}; ${results.map((r) => `${r.provider}: ${r.status}`).join(', ')}. Read-only external access.`,
+          details: `${trigger} sync ${status}; ${results.map((r) => `${r.provider}: ${r.status}`).join(', ')}. Reporting sync is read-only; separately approved affiliate email automation may send.`,
         },
       });
       return value;

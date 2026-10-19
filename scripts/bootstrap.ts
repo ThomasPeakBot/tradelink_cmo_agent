@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { initializeAffiliateEmail } from '../lib/affiliate-email/data';
 import { Client } from 'pg';
 import { spawnSync } from 'node:child_process';
 import { db } from '../lib/db';
@@ -18,6 +19,7 @@ async function main() {
       db.user.findFirst({ where: { role: 'ADMIN' }, select: { id: true } }),
     ]);
     if (company && admin) {
+      await initializeAffiliateEmail();
       console.log('Workspace already initialized; existing data and credentials preserved.');
       return;
     }
@@ -79,6 +81,7 @@ async function main() {
         });
       });
     }
+    await initializeAffiliateEmail();
     console.log(`Production workspace initialized (${config.mode} mode).`);
   } finally {
     await connection.query('SELECT pg_advisory_unlock(74182355)').catch(() => {});

@@ -291,3 +291,73 @@ model DemoArchive {
   archivedAt DateTime @default(now())
   @@index([batchId])
 }
+
+model AffiliateMailSettings {
+  id String @id @default("affiliate-email")
+  enabled Boolean @default(false)
+  rulesConfirmed Boolean @default(false)
+  rulesUrl String @default("")
+  startsAt DateTime?
+  endsAt DateTime?
+  footer String @default("")
+  updatedAt DateTime @updatedAt
+}
+model AffiliateMailAccount {
+  id String @id @default("affiliate-email")
+  email String
+  refreshToken String
+  connectedAt DateTime @default(now())
+}
+model AffiliateMailOAuth {
+  stateHash String @id
+  userId String
+  verifier String
+  expiresAt DateTime
+}
+model AffiliateMailTemplate {
+  id String @id
+  name String
+  trigger String
+  milestone Int?
+  subject String
+  body String
+  version Int @default(1)
+  approvedVersion Int?
+  approvedBy String?
+  approvedAt DateTime?
+  updatedAt DateTime @updatedAt
+}
+model AffiliateMailContact {
+  id String @id @default(cuid())
+  code String @unique
+  email String @unique
+  name String
+  affiliateUrl String
+  count Int
+  previousCount Int
+  baselineCount Int
+  rank Int?
+  gap Int?
+  snapshotAt DateTime
+  eligible Boolean @default(false)
+  unsubscribedAt DateTime?
+  updatedAt DateTime @updatedAt
+}
+model AffiliateMailDelivery {
+  id String @id @default(cuid())
+  eventKey String @unique
+  contactId String
+  templateId String
+  templateVersion Int
+  status String @default("QUEUED")
+  subject String
+  body String
+  recipient String
+  providerId String?
+  error String?
+  createdAt DateTime @default(now())
+  attemptedAt DateTime?
+  sentAt DateTime?
+  @@index([contactId, createdAt])
+  @@index([status, createdAt])
+}

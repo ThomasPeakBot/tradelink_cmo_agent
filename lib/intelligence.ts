@@ -27,6 +27,7 @@ export class ManualIntegrationProvider<T> implements IntegrationProvider<T> {
 export function companyEvidence(w: Workspace, prompt: string) {
   return {
     company: w.company,
+    affiliateCommunications: w.affiliateEmail ?? null,
     asOf: new Date().toISOString(),
     growth: w.summary,
     dailyWorkPlan: w.today.current

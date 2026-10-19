@@ -18,6 +18,7 @@ const company = {
   updatedAt: new Date(),
 };
 const context: Workspace = {
+  affiliateEmail: null,
   stripe: { configured: false, products: [], scopeId: null, lastSync: null, summary: null },
   company,
   social: [],

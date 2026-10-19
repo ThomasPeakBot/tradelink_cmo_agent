@@ -1,5 +1,6 @@
 'use client';
 import { MarkdownText } from './markdown-text';
+import { AffiliateEmail } from './affiliate-email';
 import { Today } from './today';
 import { ThemeToggle } from './theme-toggle';
 import { useRouter } from 'next/navigation';
@@ -49,6 +50,7 @@ type Tab =
   | 'Overview'
   | 'Daily metrics'
   | 'Channels'
+  | 'Affiliate communications'
   | 'Experiments'
   | 'CMO intelligence'
   | 'Briefs & plans'
@@ -75,6 +77,7 @@ const navigation: { group: string; tabs: [Tab, LucideIcon][] }[] = [
     tabs: [
       ['Daily metrics', Activity],
       ['Channels', Compass],
+      ['Affiliate communications', FileText],
       ['Experiments', FlaskConical],
       ['Forecast', TrendingUp],
     ],
@@ -101,6 +104,8 @@ const descriptions: Record<Tab, string> = {
   Today: 'Your focused workday: review, approve, execute and learn.',
   Overview: 'The signals that matter. The actions that move you forward.',
   'Daily metrics': 'One reliable record of growth, one day at a time.',
+  'Affiliate communications':
+    'Approved templates, verified referrals and automatic affiliate emails.',
   Channels: 'Understand where subscribers come from and what acquisition costs.',
   Experiments: 'Turn hypotheses into measurable growth and durable learnings.',
   'CMO intelligence': 'A CMO grounded in your company’s knowledge and operating evidence.',
@@ -383,7 +388,11 @@ export function OperatingSystem() {
         if (!res.ok)
           throw new Error('Could not load workspace. Check the database connection and seed.');
         const result = await res.json();
-        if (active) setData(result);
+        if (active) {
+          setData(result);
+          if (new URLSearchParams(window.location.search).has('affiliateEmail'))
+            setTab('Affiliate communications');
+        }
       })
       .catch((e) => {
         if (active) setError(e.message);
@@ -584,7 +593,7 @@ export function OperatingSystem() {
                 {hasDemoContext(data)
                   ? 'Sample records are labeled DEMO. Replace assumptions before making business decisions.'
                   : data.stripe.lastSync
-                    ? 'Uses verified integration snapshots and manual inputs. Sync all refreshes connected sources; automatic sync runs at 4 a.m. Eastern.'
+                    ? 'Uses verified integration snapshots and manual inputs. Sync all refreshes connected sources; automatic sync runs at 4 a.m. Eastern. Enabled affiliate email rules run after sync.'
                     : 'Manual observations. Stripe has not been synced.'}
               </span>
             </span>
@@ -775,6 +784,7 @@ export function OperatingSystem() {
             </>
           )}
           {tab === 'Daily metrics' && <Metrics data={data} mutate={mutate} />}
+          {tab === 'Affiliate communications' && <AffiliateEmail />}
           {tab === 'Today' && <Today data={data} mutate={mutate} />}
           {tab === 'Channels' && <Channels data={data} mutate={mutate} />}
           {tab === 'Experiments' && <Experiments data={data} mutate={mutate} />}
@@ -975,13 +985,14 @@ export function OperatingSystem() {
               <Panel title="Sync schedule & history">
                 <div className="record-body">
                   <p>
-                    Automatic read-only sync: daily at 4:00 a.m. America/New_York (Eastern),
-                    following daylight saving time. Configured Stripe, X, Instagram and Drive
-                    connections are included.
+                    Automatic data sync: daily at 4:00 a.m. America/New_York (Eastern), following
+                    daylight saving time. Configured Stripe, X, Instagram and Drive connections are
+                    included. Approved affiliate email automation runs afterward when enabled.
                   </p>
                   <p>
                     The refresh icon only reloads the screen. Use Sync all to fetch new provider
-                    data. Recent per-provider requests may be skipped during their cooldown.
+                    data and run enabled affiliate email rules. Recent per-provider requests may be
+                    skipped during their cooldown.
                   </p>
                   {data.syncHistory.length ? (
                     data.syncHistory.map((run) => (
@@ -1074,8 +1085,9 @@ export function OperatingSystem() {
                     Open social reporting
                   </button>
                   <p>
-                    <strong>Actions:</strong> No external executor is present in V1. Approved
-                    requests remain unexecuted.
+                    <strong>Actions:</strong> Approved affiliate email templates can send
+                    automatically when enabled in Affiliate communications. Other approval requests
+                    remain unexecuted.
                   </p>
                 </div>
               </Panel>
@@ -2154,7 +2166,7 @@ function SyncAllButton({ mutate }: { mutate: Mutate }) {
         className={`btn ${busy ? 'spin' : ''}`}
         aria-label="Sync all data"
         disabled={busy}
-        title="Fetch fresh data from all configured providers"
+        title="Fetch fresh provider data and run enabled, approved affiliate email automation"
         onClick={async () => {
           setBusy(true);
           setMessage('');

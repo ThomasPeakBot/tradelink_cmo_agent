@@ -22,3 +22,7 @@ The trigger allows eight minutes for the expanded provider set. Providers execut
 ## Validation
 
 Unit checks cover winter/summer 4am mapping, both DST transitions, Eastern date boundaries, batch statuses, cron authentication and failed-job HTTP status. PostgreSQL fixtures cover failure isolation, missing credentials, same-day deduplication, orphan recovery and overlapping job exclusion. Browser coverage exercises Sync all and its visible results/mobile header. The cron must be deployed and its schedule read back before calling automation enabled.
+
+## Approved affiliate email exception
+
+Reporting adapters remain read-only. After the reporting/alert stages, a separately approved affiliate email runner now participates in scheduled and manual full syncs. It is a no-op while paused or unconfigured. When the owner connects the verified sender, confirms rules/recipient permissions, approves template versions and explicitly enables automation, this stage can send affiliate emails through Gmail. All other external actions remain manual. See [affiliate email scopes, safeguards and prerequisites](AFFILIATE-EMAIL.md). No second cron was added.

@@ -1,3 +1,4 @@
+import { affiliateEmailEvidence } from './affiliate-email/data';
 import { todayGuideSchema } from './today-guide';
 import { xAdsConfiguration, xAdsSnapshotSchema } from './x-ads';
 import { easternSchedule } from './sync-state';
@@ -22,6 +23,7 @@ export async function getWorkspace(userId: string) {
     alerts,
     reports,
     messages,
+    affiliateEmail,
   ] = await Promise.all([
     db.company.findUniqueOrThrow({ where: { id: 'tradelink' } }),
     db.dailyMetric.findMany({ orderBy: { date: 'asc' } }),
@@ -41,6 +43,7 @@ export async function getWorkspace(userId: string) {
       orderBy: { createdAt: 'desc' },
       take: 30,
     }),
+    affiliateEmailEvidence(),
   ]);
   const adsConfig = xAdsConfiguration();
   const adsRow = adsConfig.accountId
@@ -226,6 +229,7 @@ export async function getWorkspace(userId: string) {
   });
   return {
     company: goal,
+    affiliateEmail,
     xAds,
     today,
     syncHistory,

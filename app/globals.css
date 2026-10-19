@@ -2037,3 +2037,11 @@ html[data-theme='dark'] .rank {
 .task-discussion textarea {
   width: 100%;
 }
+
+.affiliate-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  line-height: 1.65;
+  padding: 20px;
+}
