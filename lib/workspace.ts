@@ -1,3 +1,4 @@
+import { todayGuideSchema } from './today-guide';
 import { xAdsConfiguration, xAdsSnapshotSchema } from './x-ads';
 import { easternSchedule } from './sync-state';
 import { z } from 'zod';
@@ -65,7 +66,11 @@ export async function getWorkspace(userId: string) {
     ...p,
     date: p.date.toISOString().slice(0, 10),
     warnings: z.array(z.string()).parse(p.warnings),
-    tasks: p.tasks.map((t) => ({ ...t, evidence: z.array(z.string()).parse(t.evidence) })),
+    tasks: p.tasks.map((t) => ({
+      ...t,
+      guide: t.guide ? todayGuideSchema.parse(t.guide) : null,
+      evidence: z.array(z.string()).parse(t.evidence),
+    })),
   }));
   const today = {
     date: todayDate,

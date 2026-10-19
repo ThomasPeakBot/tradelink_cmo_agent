@@ -1975,3 +1975,47 @@ html[data-theme='dark'] .rank {
     font-size: 12px;
   }
 }
+
+.today-guide {
+  border-top: 1px solid var(--line);
+  margin-top: 20px;
+  padding-top: 20px;
+}
+.today-guide h4 {
+  font-size: 17px;
+  margin: 18px 0 12px;
+}
+.today-guide summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-weight: 600;
+}
+.today-steps {
+  padding-left: 24px;
+}
+.today-steps li {
+  padding: 7px 0;
+}
+.today-steps p {
+  margin: 8px 0;
+  line-height: 1.65;
+}
+.today-ai-prompt {
+  margin: 14px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.today-ai-prompt pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.65;
+  max-height: 420px;
+  overflow: auto;
+  padding: 12px;
+  background: var(--paper);
+  border-radius: 8px;
+}

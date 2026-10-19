@@ -11,6 +11,16 @@ test('Today guides a bounded workday, saves task outcomes and records a check-in
   await page.getByLabel('Planning provider').selectOption('local');
   await page.getByRole('button', { name: 'Generate today’s plan', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Approve task', exact: true })).toHaveCount(3);
+  await expect(
+    page.getByRole('heading', { name: 'Step-by-step instructions', exact: true }),
+  ).toHaveCount(3);
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page
+    .getByRole('button', { name: /Copy AI prompt:/ })
+    .first()
+    .click();
+  await expect(page.getByRole('button', { name: /Copy AI prompt:/ }).first()).toHaveText('Copied');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('TradeLink');
   await page.getByRole('button', { name: 'Approve task', exact: true }).first().click();
   await page
     .getByLabel('Observed outcome')

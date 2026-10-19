@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import 'dotenv/config';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
@@ -62,6 +63,45 @@ async function main() {
     try {
       cached = previous ? JSON.parse(previous.content) : null;
     } catch {}
+    if (
+      process.argv.includes('--skip-previously-failed-png') &&
+      asset.mimeType === 'image/png' &&
+      cached?.status === 'FAILED' &&
+      cached.modifiedAt === asset.modifiedAt
+    ) {
+      const coverage =
+        'Excluded from content review at the owner’s explicit request after the previous PNG failure.';
+      await db.memory.update({
+        where: { id: memoryId },
+        data: {
+          content: JSON.stringify({
+            ...cached,
+            status: 'SKIPPED_USER',
+            coverage,
+            summary: 'No content review completed. Do not infer this image’s content.',
+          }),
+        },
+      });
+      results.push({
+        fileId: asset.fileId,
+        name: asset.name,
+        path: asset.path,
+        mimeType: asset.mimeType,
+        status: 'SKIPPED_USER',
+        coverage,
+        summary: 'Not reviewed at owner request.',
+      });
+      console.log(
+        'RECURSIVE_FILE_REVIEW ' +
+          JSON.stringify({
+            position: results.length,
+            total: inventory.files.length,
+            mimeType: asset.mimeType,
+            status: 'SKIPPED_USER',
+          }),
+      );
+      continue;
+    }
     try {
       let result: {
         status: string;
@@ -143,12 +183,14 @@ async function main() {
       });
     } catch (error) {
       const reason =
-        error instanceof Error &&
-        /^(File format not supported|Asset exceeds|Video duration outside|Asset scope|Image signature|Photoshop signature|Video signature|Asset is outside)/.test(
-          error.message,
-        )
-          ? error.message
-          : 'Content could not be reviewed: check access, format, media tool support or provider availability.';
+        error instanceof z.ZodError
+          ? `Review output validation failed: ${error.issues.map((i) => i.path.join('.') + ':' + i.code).join(', ')}`
+          : error instanceof Error &&
+              /^(File format not supported|Asset exceeds|Video duration outside|Asset scope|Image signature|Photoshop signature|Video signature|Asset is outside)/.test(
+                error.message,
+              )
+            ? error.message
+            : 'Content could not be reviewed: check access, format, media tool support or provider availability.';
       const failureData = {
         source: `https://drive.google.com/file/d/${asset.fileId}/view`,
         modifiedAt: asset.modifiedAt,
@@ -192,7 +234,8 @@ async function main() {
   const reviewed = results.filter((r) => r.status === 'REVIEWED').length,
     partial = results.filter((r) => r.status === 'PARTIAL').length,
     failed = results.filter((r) => r.status === 'FAILED').length;
-  const coverage = `${inventory.files.length} files inventoried recursively across ${inventory.folders.length} folders. ${reviewed} reviewed; ${partial} reviewed with explicit limitations; ${failed} could not be reviewed. Video reviews use sampled frames plus full audio transcription where available. Photoshop reviews cover the flattened composite, not hidden layers. Spreadsheet reviews include cached cells and formulas in every worksheet, not embedded visuals or recalculation.`;
+  const skippedUser = results.filter((r) => r.status === 'SKIPPED_USER').length;
+  const coverage = `${inventory.files.length} files inventoried recursively across ${inventory.folders.length} folders. ${reviewed} reviewed; ${partial} reviewed with explicit limitations; ${failed} could not be reviewed; ${skippedUser} excluded at owner request. Video reviews use sampled frames plus full audio transcription where available. Photoshop reviews cover the flattened composite, not hidden layers. Spreadsheet reviews include cached cells and formulas in every worksheet, not embedded visuals or recalculation.`;
   const report = await db.report.create({
     data: {
       type: 'DRIVE_REVIEW',
@@ -238,6 +281,7 @@ async function main() {
         reviewed,
         partial,
         failed,
+        skippedUser,
         noDriveWrites: true,
       }),
     },
@@ -251,6 +295,7 @@ async function main() {
         reviewed,
         partial,
         failed,
+        skippedUser,
       }),
   );
   // Regenerate the explicitly requested plan using current imports and all saved file reviews.

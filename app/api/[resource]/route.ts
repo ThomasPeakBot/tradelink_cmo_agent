@@ -1,3 +1,4 @@
+import { TodayGuideError } from '@/lib/today-guidance';
 import { syncXAds } from '@/lib/x-ads-sync';
 import { XAdsReadError } from '@/lib/x-ads';
 import { todayAction, TodayError } from '@/lib/today-actions';
@@ -328,7 +329,7 @@ export async function POST(request: Request, { params }: Route) {
         { error: error.message, code: error.code },
         { status: error.code === 'busy' ? 429 : 400 },
       );
-    if (error instanceof TodayError)
+    if (error instanceof TodayError || error instanceof TodayGuideError)
       return NextResponse.json({ error: error.message }, { status: 400 });
     if (error instanceof SyncBusyError)
       return NextResponse.json({ error: error.message }, { status: 429 });

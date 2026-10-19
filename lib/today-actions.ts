@@ -1,3 +1,5 @@
+import { Prisma } from '@prisma/client';
+import { attachTaskGuide } from './today-guidance';
 import { z } from 'zod';
 import { db } from './db';
 import { getWorkspace } from './workspace';
@@ -81,6 +83,14 @@ export async function todayAction(
     return;
   }
   const base = z.object({ planId: id, version }).parse(body);
+  if (body.action === 'guide') {
+    const request = z
+      .object({ action: z.literal('guide'), planId: id, version, taskId: id })
+      .strict()
+      .parse(body);
+    await attachTaskGuide(actor, request.planId, request.taskId, request.version);
+    return;
+  }
   await db.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(74182360)`;
     const plan = await tx.dailyPlan.findUniqueOrThrow({
@@ -170,6 +180,7 @@ export async function todayAction(
           deliverable: input.deliverable,
           successMetric: input.successMetric,
           status: 'PROPOSED',
+          guide: Prisma.DbNull,
         },
       });
     } else if (body.action === 'checkin') {

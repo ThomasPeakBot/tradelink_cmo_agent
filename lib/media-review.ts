@@ -8,19 +8,37 @@ import { openAIKey } from './config';
 import { driveReviewSchema, reviewDriveDocument } from './drive-review';
 import type { DriveAsset } from './drive-assets';
 const exec = promisify(execFile);
-const command = async (binary: string, args: string[], cwd: string, timeout = 60000) =>
-  exec(binary, args, {
-    cwd,
-    timeout,
-    maxBuffer: 2_000_000,
-    env: {
-      PATH: process.env.PATH,
-      NODE_ENV: 'production',
-      LANG: 'C.UTF-8',
-      TMPDIR: cwd,
-      MAGICK_TEMPORARY_PATH: cwd,
-    },
-  });
+const command = async (binary: string, args: string[], cwd: string, timeout = 60000) => {
+  try {
+    return await exec(binary, args, {
+      cwd,
+      timeout,
+      maxBuffer: 2_000_000,
+      env: {
+        PATH: process.env.PATH,
+        NODE_ENV: 'production',
+        LANG: 'C.UTF-8',
+        TMPDIR: cwd,
+        MAGICK_TEMPORARY_PATH: cwd,
+      },
+    });
+  } catch (error) {
+    const e = error as { code?: string | number; stderr?: string };
+    const text = e.stderr ?? '';
+    const category = /cache resources exhausted|memory allocation|width or height exceeds/i.test(
+      text,
+    )
+      ? 'resource limit'
+      : /improper image header|insufficient image data|no decode delegate|unsupported/i.test(text)
+        ? 'unsupported encoding'
+        : /not authorized/i.test(text)
+          ? 'decoder policy'
+          : 'decoder failure';
+    throw Error(
+      `Media conversion failed: ${category} (exit ${typeof e.code === 'number' ? e.code : 'unknown'})`,
+    );
+  }
+};
 export type MediaReview = {
   status: 'REVIEWED' | 'PARTIAL';
   coverage: string;
@@ -87,7 +105,7 @@ export async function reviewImages(
       ],
     }),
   });
-  if (!response.ok) throw Error('Visual review unavailable');
+  if (!response.ok) throw Error(`Visual review HTTP ${response.status}`);
   const data = await response.json();
   return driveReviewSchema.parse(JSON.parse(data.choices?.[0]?.message?.content || ''));
 }

@@ -266,6 +266,19 @@ function TaskCard({
             ))}
           </small>
         </p>
+        {task.guide ? (
+          <TaskGuide guide={task.guide} />
+        ) : !historical && task.status !== 'COMPLETED' ? (
+          <div className="today-guide">
+            <h4>Step-by-step instructions & AI help</h4>
+            <p>
+              Generate practical steps, input requirements and copy-ready prompts for this task.
+            </p>
+            <button className="btn" disabled={busy} onClick={() => save({ action: 'guide' })}>
+              {busy ? 'Preparing instructions…' : 'Generate AI instructions'}
+            </button>
+          </div>
+        ) : null}
         {task.status === 'COMPLETED' && (
           <div className="review-result">
             <strong>Reported outcome</strong>
@@ -482,5 +495,85 @@ function CheckIn({
         </p>
       )}
     </form>
+  );
+}
+
+function TaskGuide({ guide }: { guide: NonNullable<Task['guide']> }) {
+  const [copied, setCopied] = useState<number | null>(null);
+  const [copyError, setCopyError] = useState('');
+  return (
+    <div className="today-guide">
+      <h4>Step-by-step instructions</h4>
+      <details>
+        <summary>What you need before starting</summary>
+        <ul>
+          {guide.inputs.map((input, i) => (
+            <li key={i}>{input}</li>
+          ))}
+        </ul>
+      </details>
+      <ol className="today-steps">
+        {guide.steps.map((step, i) => (
+          <li key={i}>
+            <strong>
+              {step.title} <span className="badge">{step.minutes} min</span>
+            </strong>
+            <p>{step.instruction}</p>
+          </li>
+        ))}
+      </ol>
+      <h4>Let AI do the heavy lifting</h4>
+      <p>
+        Copy a prompt into the named tool. Attach any listed inputs; a new chat cannot automatically
+        access your private Drive or CMO workspace.
+      </p>
+      {guide.aiPrompts.map((prompt, i) => (
+        <section className="today-ai-prompt" key={i}>
+          <strong>{prompt.title}</strong>
+          <p>
+            <span className="badge">{prompt.tool}</span>
+          </p>
+          {prompt.requiredInputs.length > 0 && (
+            <>
+              <small>Attach or provide:</small>
+              <ul>
+                {prompt.requiredInputs.map((input, j) => (
+                  <li key={j}>{input}</li>
+                ))}
+              </ul>
+            </>
+          )}
+          <button
+            className="btn"
+            aria-label={`Copy AI prompt: ${prompt.title}`}
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(prompt.prompt);
+                setCopied(i);
+                setCopyError('');
+              } catch {
+                setCopyError('Clipboard unavailable. Select and copy the prompt below.');
+              }
+            }}
+          >
+            {copied === i ? 'Copied' : 'Copy prompt'}
+          </button>
+          <details>
+            <summary>View prompt</summary>
+            <pre>{prompt.prompt}</pre>
+          </details>
+        </section>
+      ))}
+      {copyError && <p role="status">{copyError}</p>}
+      <h4>Definition of done</h4>
+      <ul>
+        {guide.definitionOfDone.map((item, i) => (
+          <li key={i}>{item}</li>
+        ))}
+      </ul>
+      <p className="today-warning">
+        <strong>Your approval:</strong> {guide.approvalBoundary}
+      </p>
+    </div>
   );
 }

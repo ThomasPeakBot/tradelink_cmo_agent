@@ -76,7 +76,7 @@ export function companyEvidence(w: Workspace, prompt: string) {
     institutionalMemory: w.memories.filter((m) => {
       if (!m.id.startsWith('drive-asset-review:') && !m.id.startsWith('drive-review:')) return true;
       try {
-        return JSON.parse(m.content).status !== 'FAILED';
+        return !['FAILED', 'SKIPPED_USER'].includes(JSON.parse(m.content).status);
       } catch {
         return true;
       }

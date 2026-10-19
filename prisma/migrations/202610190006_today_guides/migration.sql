@@ -1,0 +1,1 @@
+ALTER TABLE "TodayTask" ADD COLUMN "guide" JSONB;
