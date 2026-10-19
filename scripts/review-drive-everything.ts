@@ -64,10 +64,11 @@ async function main() {
       cached = previous ? JSON.parse(previous.content) : null;
     } catch {}
     if (
-      process.argv.includes('--skip-previously-failed-png') &&
       asset.mimeType === 'image/png' &&
-      cached?.status === 'FAILED' &&
-      cached.modifiedAt === asset.modifiedAt
+      (cached?.status === 'SKIPPED_USER' ||
+        (process.argv.includes('--skip-previously-failed-png') &&
+          cached?.status === 'FAILED' &&
+          cached.modifiedAt === asset.modifiedAt))
     ) {
       const coverage =
         'Excluded from content review at the owner’s explicit request after the previous PNG failure.';
