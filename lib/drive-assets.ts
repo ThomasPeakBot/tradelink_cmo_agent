@@ -66,7 +66,12 @@ export class DriveAssetReader {
       throw Error('Asset is outside scanned inventory');
     if (this.total >= 500_000_000) throw Error('Folder media download budget exceeded');
     const signal = AbortSignal.timeout(120000);
-    const get = async (path: string, params: Record<string, string>, max: number) => {
+    const get = async (
+      path: string,
+      params: Record<string, string>,
+      max: number,
+      track = false,
+    ) => {
       const url = new URL('https://www.googleapis.com/drive/v3/' + path);
       for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
       return bytes(
