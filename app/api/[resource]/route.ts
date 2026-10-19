@@ -1,3 +1,4 @@
+import { ideaAction, IdeaError } from '@/lib/experiment-ideas';
 import { discussTask } from '@/lib/task-discussion';
 import { TodayGuideError } from '@/lib/today-guidance';
 import { syncXAds } from '@/lib/x-ads-sync';
@@ -45,6 +46,11 @@ export async function GET(_request: Request, { params }: Route) {
   }
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: 'Sign in required' }, { status: 401 });
+  if (resource === 'experiment-ideas')
+    return NextResponse.json(
+      await db.experimentIdea.findMany({ orderBy: { createdAt: 'desc' }, take: 30 }),
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
   if (resource !== 'workspace') return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json(
     {
@@ -71,7 +77,9 @@ export async function POST(request: Request, { params }: Route) {
       entityId: string,
       details: string,
     ) => tx.auditLog.create({ data: { actor: user.email, action, entityType, entityId, details } });
-    if (resource === 'today') {
+    if (resource === 'experiment-ideas') {
+      return NextResponse.json(await ideaAction(user, body));
+    } else if (resource === 'today') {
       await todayAction(user, body);
     } else if (resource === 'sync-all') {
       z.object({}).strict().parse(body);
@@ -336,7 +344,11 @@ export async function POST(request: Request, { params }: Route) {
         { error: error.message, code: error.code },
         { status: error.code === 'busy' ? 429 : 400 },
       );
-    if (error instanceof TodayError || error instanceof TodayGuideError)
+    if (
+      error instanceof TodayError ||
+      error instanceof TodayGuideError ||
+      error instanceof IdeaError
+    )
       return NextResponse.json({ error: error.message }, { status: 400 });
     if (error instanceof SyncBusyError)
       return NextResponse.json({ error: error.message }, { status: 429 });

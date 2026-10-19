@@ -2,6 +2,7 @@
 import { MarkdownText } from './markdown-text';
 import { AffiliateEmail } from './affiliate-email';
 import { Today } from './today';
+import { ExperimentIdeas } from './experiment-ideas';
 import { ThemeToggle } from './theme-toggle';
 import { useRouter } from 'next/navigation';
 import { hasDemoContext } from '@/lib/demo';
@@ -1296,6 +1297,7 @@ function Experiments({ data, mutate }: { data: Data; mutate: Mutate }) {
   const [editing, setEditing] = useState<string | null>(null);
   return (
     <>
+      <ExperimentIdeas mutate={mutate} />
       <Panel
         title="Experiment backlog"
         subtitle="ICE score = impact × confidence × ease. Each dimension is rated 1–10."
