@@ -60,8 +60,8 @@ function fixture(
     expect(url.href).not.toContain('oauth_token');
     if (options.fail) return new Response('private secret upstream', { status: 403 });
     if (url.pathname.includes('/stats/')) {
-      expect(url.searchParams.get('start_time')).toBe('2026-10-12T00:00:00.000Z');
-      expect(url.searchParams.get('end_time')).toBe('2026-10-19T00:00:00.000Z');
+      expect(url.searchParams.get('start_time')).toBe('2026-10-12T00:00:00Z');
+      expect(url.searchParams.get('end_time')).toBe('2026-10-19T00:00:00Z');
       expect(url.searchParams.get('granularity')).toBe('TOTAL');
       expect(url.searchParams.get('metric_groups')).toBe('ENGAGEMENT,BILLING');
       return response({

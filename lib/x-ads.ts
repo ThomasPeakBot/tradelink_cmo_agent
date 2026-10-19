@@ -226,8 +226,8 @@ export class XAdsReadOnlyProvider implements XAdsProvider {
         await read(`stats/accounts/${account.id}`, {
           entity: 'CAMPAIGN',
           entity_ids: batch.map((c) => c.id).join(','),
-          start_time: start.toISOString(),
-          end_time: end.toISOString(),
+          start_time: start.toISOString().replace('.000Z', 'Z'),
+          end_time: end.toISOString().replace('.000Z', 'Z'),
           granularity: 'TOTAL',
           placement: 'ALL_ON_TWITTER',
           metric_groups: 'ENGAGEMENT,BILLING',
