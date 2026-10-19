@@ -2,9 +2,9 @@
 
 Authority: the owner supplied this complete sequence as their final version after the review. It supersedes the earlier mixed working draft and assistant-proposed alternatives for outreach wording. Preserve the paired email/DM cadence on Days 1, 4, 8, 13 and 20, plus the once-only contact-form fallback.
 
-One mechanical correction: the malformed email-two hyperlink target ending in `%E2%80%9D` was normalized to `https://peakbot.com/tradelink-affiliate/`. The original uploaded text is retained separately in the repository. Message wording is otherwise unchanged; Markdown formatting may be normalized.
+One mechanical correction: the malformed email-two hyperlink target ending in `%E2%80%9D` was normalized to `https://peakbot.com/tradelink-affiliate/`. The original uploaded text is retained separately in the repository. Email 2’s leftover Dillon signature was corrected to Gavyn per the explicit owner instruction. Email wording follows the revised upload; Markdown formatting may be normalized. Only emails were updated in emailcreator; social DMs, contact-form copy and scheduling there remain unchanged.
 
-This is final editorial copy, not authorization to send, schedule, enroll prospects or approve the separate enrolled-affiliate automation. Sender identity in these messages is Dillon. The exact commission treatment of discounted month one, official competition status/scoring and free-access duration/fulfillment remain unverified. No conversion results have been supplied. Do not promote those unverified details to established operating policy simply because this copy is final.
+This is final editorial copy, not authorization to send, schedule, enroll prospects or approve the separate enrolled-affiliate automation. The five email messages now use Gavyn, Community Leader of PeakBot, per the owner’s revised upload. Existing social DMs and contact-form material below are historical and were not updated or implemented by this email-only change; they must not override the email sender identity. The exact commission treatment of discounted month one, official competition status/scoring and free-access duration/fulfillment remain unverified. No conversion results have been supplied. Do not promote those unverified details to established operating policy simply because this copy is final.
 
 ## Final supplied sequence
 
@@ -26,22 +26,21 @@ Subject: New recurring revenue opportunity for your futures audience
 
 Hey [First Name],
 
-I’m Dillon, co-founder of PeakBot. We built TradeLink for futures traders managing multiple prop-firm accounts.
+I’m Gavyn, Community Leader of PeakBot. We built TradeLink for futures traders managing multiple prop-firm accounts.
 
 With TradeLink, traders can place a trade in one account and automatically copy it across up to 150 accounts, all for $40 per month, with unlimited prop-firm connections.
 
 We’re inviting futures creators and communities to become affiliate partners:
-
-- You earn 40% recurring commission, $16 per active subscriber per month 
+- You earn 40% recurring commission, $16 per active subscriber per month
 - Your audience gets 40% off their first month
 
-Take a look: [https://usetradelink.com](https://usetradelink.com)
+Take a look: https://usetradelink.com
 
-If you’re interested in more details, reply ‘yes’ and we’ll send them over. 
+If you’re interested in more details, reply ‘yes’ and we’ll send them over.
 
 Thanks,
-Dillon
-Co-Founder, PeakBot
+Gavyn
+Community Leader, PeakBot
 
 Suggested timing: Day 1
 
@@ -63,14 +62,15 @@ If your audience trades across multiple prop-firm accounts, TradeLink could be a
 Traders place a trade in one prop account, and TradeLink automatically copies it across their connected accounts, reducing the need to repeat orders manually.
 
 As a TradeLink affiliate:
-
-- You earn 40% recurring commission, $16 per active subscriber per month 
+- You earn 40% recurring commission, $16 per active subscriber per month
 - Your audience gets 40% off their first month
 
-There’s also a $10,000 cash bonus for the top affiliate. 
-See the affiliate program details and $10,000 competition rules here: [https://peakbot.com/tradelink-affiliate/](https://peakbot.com/tradelink-affiliate/)
-Dillon
-Co-Founder, PeakBot
+There’s also a $10,000 cash bonus for the top affiliate.
+See the affiliate program details and $10,000 competition rules here:
+https://peakbot.com/tradelink-affiliate/
+Gavyn
+Community Leader, PeakBot
+
 Suggested timing: Day 4
 
 Hey [First Name], just following up on TradeLink.
@@ -98,7 +98,8 @@ Your audience also gets 40% off their first month.
 
 Want to try TradeLink for free before becoming an affiliate? Email us back with a “yes”.
 
-Dillon
+Gavyn
+
 Suggested timing: Day 8
 
 Have you considered becoming a TradeLink affiliate? Reply “yes” to try TradeLink for free.
@@ -111,7 +112,6 @@ Hey [First Name],
 Here’s what TradeLink’s recurring affiliate commission looks like in numbers.
 
 At $16 per active subscriber per month at the standard subscription price:
-
 - 25 active subscribers = $400/month
 - 50 active subscribers = $800/month
 - 100 active subscribers = $1,600/month
@@ -120,9 +120,10 @@ TradeLink costs $40/month and lets futures traders copy trades across up to 150 
 
 There’s also a $10,000 cash bonus for the top affiliate.
 
-Visit [https://peakbot.com/tradelink-affiliate/](https://peakbot.com/tradelink-affiliate/) for all the details
+Visit https://peakbot.com/tradelink-affiliate/ for all the details
 
-Dillon
+Gavyn
+
 Suggested timing: Day 13
 
 Quick example of your TradeLink affiliate opportunity:
@@ -143,7 +144,6 @@ One last email about becoming a TradeLink affiliate.
 TradeLink lets futures traders copy trades across up to 150 accounts for $40/month.
 
 As an affiliate, you receive:
-
 - 40% recurring commission, $16 per subscriber per month
 - 40% off the first month for your audience
 - An opportunity to win the $10,000 top-affiliate bonus
@@ -152,7 +152,7 @@ Interested? Reply “yes” and we’ll send you the details.
 
 https://peakbot.com/tradelink-affiliate/
 
-Dillon
+Gavyn
 
 Suggested timing: Day 20
 
