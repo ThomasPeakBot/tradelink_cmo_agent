@@ -21,7 +21,7 @@ export async function reviewDriveDocument(
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
       temperature: 0.2,
-      max_completion_tokens: 1800,
+      max_completion_tokens: 3000,
       response_format: {
         type: 'json_schema',
         json_schema: {
@@ -31,9 +31,17 @@ export async function reviewDriveDocument(
             type: 'object',
             additionalProperties: false,
             properties: {
-              summary: { type: 'string' },
-              growthImplications: { type: 'array', items: { type: 'string' } },
-              uncertainties: { type: 'array', items: { type: 'string' } },
+              summary: { type: 'string', maxLength: 3000 },
+              growthImplications: {
+                type: 'array',
+                maxItems: 5,
+                items: { type: 'string', maxLength: 500 },
+              },
+              uncertainties: {
+                type: 'array',
+                maxItems: 5,
+                items: { type: 'string', maxLength: 500 },
+              },
             },
             required: ['summary', 'growthImplications', 'uncertainties'],
           },

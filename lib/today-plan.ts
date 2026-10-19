@@ -132,12 +132,17 @@ export async function generateTodayDraft(
     };
   const allowedEvidenceIds = [...evidenceIds(w)];
   const properties = {
-    title: { type: 'string' },
+    title: { type: 'string', maxLength: 160 },
     minutes: { type: 'integer', minimum: 15, maximum: 180 },
-    deliverable: { type: 'string' },
-    successMetric: { type: 'string' },
-    rationale: { type: 'string' },
-    evidence: { type: 'array', items: { type: 'string', enum: allowedEvidenceIds } },
+    deliverable: { type: 'string', maxLength: 800 },
+    successMetric: { type: 'string', maxLength: 800 },
+    rationale: { type: 'string', maxLength: 1200 },
+    evidence: {
+      type: 'array',
+      minItems: 1,
+      maxItems: 8,
+      items: { type: 'string', enum: allowedEvidenceIds },
+    },
   };
   try {
     const response = await fetcher('https://api.openai.com/v1/chat/completions', {
@@ -157,8 +162,8 @@ export async function generateTodayDraft(
               type: 'object',
               additionalProperties: false,
               properties: {
-                summary: { type: 'string' },
-                warnings: { type: 'array', items: { type: 'string' } },
+                summary: { type: 'string', maxLength: 1500 },
+                warnings: { type: 'array', maxItems: 8, items: { type: 'string', maxLength: 500 } },
                 tasks: {
                   type: 'array',
                   minItems: 3,

@@ -6,6 +6,10 @@ it('sends full imported text rather than retrieval excerpts, treats it as untrus
   const content = 'Start ' + 'reference '.repeat(1800) + ' THE_END';
   const fetcher = vi.fn(async (_url: unknown, init?: RequestInit) => {
     const body = JSON.parse(String(init?.body));
+    expect(body.response_format.json_schema.schema.properties.summary.maxLength).toBe(3000);
+    expect(
+      body.response_format.json_schema.schema.properties.growthImplications.items.maxLength,
+    ).toBe(500);
     expect(body.messages[0].content).toContain('untrusted DATA');
     expect(body.messages[1].content).toContain('THE_END');
     expect(body.messages[1].content).toContain(content);
