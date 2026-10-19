@@ -1,4 +1,5 @@
 'use client';
+import { Today } from './today';
 import { ThemeToggle } from './theme-toggle';
 import { useRouter } from 'next/navigation';
 import { hasDemoContext } from '@/lib/demo';
@@ -43,6 +44,7 @@ type Json<T> = T extends Date
       : T;
 type Data = Json<Workspace> & { user: { name: string; email: string }; provider: string };
 type Tab =
+  | 'Today'
   | 'Overview'
   | 'Daily metrics'
   | 'Channels'
@@ -61,6 +63,7 @@ const navigation: { group: string; tabs: [Tab, LucideIcon][] }[] = [
   {
     group: 'COMMAND CENTER',
     tabs: [
+      ['Today', ClipboardCheck],
       ['Overview', LayoutDashboard],
       ['CMO intelligence', Sparkles],
       ['Briefs & plans', FileText],
@@ -94,6 +97,7 @@ const navigation: { group: string; tabs: [Tab, LucideIcon][] }[] = [
   },
 ];
 const descriptions: Record<Tab, string> = {
+  Today: 'Your focused workday: review, approve, execute and learn.',
   Overview: 'The signals that matter. The actions that move you forward.',
   'Daily metrics': 'One reliable record of growth, one day at a time.',
   Channels: 'Understand where subscribers come from and what acquisition costs.',
@@ -770,6 +774,7 @@ export function OperatingSystem() {
             </>
           )}
           {tab === 'Daily metrics' && <Metrics data={data} mutate={mutate} />}
+          {tab === 'Today' && <Today data={data} mutate={mutate} />}
           {tab === 'Channels' && <Channels data={data} mutate={mutate} />}
           {tab === 'Experiments' && <Experiments data={data} mutate={mutate} />}
           {tab === 'Knowledge base' && <Knowledge data={data} mutate={mutate} />}
@@ -1221,6 +1226,16 @@ function Channels({ data, mutate }: { data: Data; mutate: Mutate }) {
   return (
     <>
       <SocialReporting data={data} mutate={mutate} />
+      <Panel title="X paid advertising" subtitle="Separate from organic X reporting">
+        <div className="record-body">
+          <p>{data.xAds.note}</p>
+          <p>
+            Advertiser account: {data.xAds.accountId || 'Not configured'}. A dedicated read-only X
+            Ads API connection requires approved developer access, advertiser-account permission and
+            user-context OAuth credentials. No ad campaigns are modified by this app.
+          </p>
+        </div>
+      </Panel>
       <Panel
         title="Channel performance"
         subtitle="Last 30 calendar days. CAC = recorded spend / attributed subscribers; conversion = subscribers / visitors."

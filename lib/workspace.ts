@@ -1,3 +1,5 @@
+import { easternSchedule } from './sync-state';
+import { z } from 'zod';
 import { syncResultsSchema } from './sync-state';
 import { driveConfiguration, tradeLinkFolderId } from './drive';
 import { socialConfiguration, socialSnapshotSchema } from './social';
@@ -34,6 +36,23 @@ export async function getWorkspace(userId: string) {
     db.report.findMany({ orderBy: { createdAt: 'desc' }, take: 30 }),
     db.chatMessage.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 30 }),
   ]);
+  const todayDate = easternSchedule().day;
+  const plans = await db.dailyPlan.findMany({
+    orderBy: { date: 'desc' },
+    take: 7,
+    include: { tasks: { orderBy: { position: 'asc' } } },
+  });
+  const dayPlans = plans.map((p) => ({
+    ...p,
+    date: p.date.toISOString().slice(0, 10),
+    warnings: z.array(z.string()).parse(p.warnings),
+    tasks: p.tasks.map((t) => ({ ...t, evidence: z.array(z.string()).parse(t.evidence) })),
+  }));
+  const today = {
+    date: todayDate,
+    current: dayPlans.find((p) => p.date === todayDate) ?? null,
+    history: dayPlans.filter((p) => p.date !== todayDate),
+  };
   const syncHistory = (await db.syncRun.findMany({ orderBy: { startedAt: 'desc' }, take: 5 })).map(
     (r) => ({
       ...r,
@@ -159,6 +178,12 @@ export async function getWorkspace(userId: string) {
   });
   return {
     company: goal,
+    xAds: {
+      accountId: process.env.X_ADS_ACCOUNT_ID || null,
+      connected: false,
+      note: 'Paid X Ads reporting is not connected. Organic X metrics are not advertising performance.',
+    },
+    today,
     syncHistory,
     stripe,
     social,

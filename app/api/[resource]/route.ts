@@ -1,3 +1,4 @@
+import { todayAction, TodayError } from '@/lib/today-actions';
 import { syncAll, SyncBusyError } from '@/lib/sync-all';
 import { syncDrive } from '@/lib/drive-sync';
 import { DriveReadError } from '@/lib/drive';
@@ -66,7 +67,9 @@ export async function POST(request: Request, { params }: Route) {
       entityId: string,
       details: string,
     ) => tx.auditLog.create({ data: { actor: user.email, action, entityType, entityId, details } });
-    if (resource === 'sync-all') {
+    if (resource === 'today') {
+      await todayAction(user, body);
+    } else if (resource === 'sync-all') {
       z.object({}).strict().parse(body);
       return NextResponse.json(await syncAll(user.email, 'MANUAL'));
     } else if (resource === 'drive-sync') {
@@ -315,6 +318,8 @@ export async function POST(request: Request, { params }: Route) {
       await refreshAlerts(user.id);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof TodayError)
+      return NextResponse.json({ error: error.message }, { status: 400 });
     if (error instanceof SyncBusyError)
       return NextResponse.json({ error: error.message }, { status: 429 });
     if (error instanceof DriveReadError)

@@ -23,12 +23,24 @@ export class ManualIntegrationProvider<T> implements IntegrationProvider<T> {
     return [];
   }
 }
-function evidence(w: Workspace, prompt: string) {
+export function companyEvidence(w: Workspace, prompt: string) {
   return {
     company: w.company,
     asOf: new Date().toISOString(),
     growth: w.summary,
+    dailyWorkPlan: w.today.current,
+    recentDailyOutcomes: w.today.history.slice(0, 3).map((p) => ({
+      date: p.date,
+      learning: p.learning,
+      blockers: p.blockers,
+      tasks: p.tasks.map((t) => ({
+        title: t.title,
+        status: t.status,
+        outcome: t.outcome.slice(0, 500),
+      })),
+    })),
     billing: w.stripe,
+    paidXAdvertising: w.xAds,
     socialReporting: w.social.map((c) => ({
       ...c,
       snapshot: c.snapshot
@@ -155,7 +167,7 @@ export class OpenAIIntelligenceProvider implements IntelligenceProvider {
             content: JSON.stringify({
               task: request.type,
               question: request.prompt,
-              storedEvidence: evidence(request.context, request.prompt),
+              storedEvidence: companyEvidence(request.context, request.prompt),
             }),
           },
         ],

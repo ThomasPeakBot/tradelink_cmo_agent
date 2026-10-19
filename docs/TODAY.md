@@ -1,0 +1,19 @@
+# Today: a focused TradeLink workday
+
+Open **Today** from the sidebar. Choose four, four-and-a-half or five hours and generate a plan. Twenty minutes for evidence review and twenty for the end-of-day check-in are reserved; the three proposed tasks must fit within the remaining time. Generation is manual, not part of the 4am data sync. Sync fresh provider data first when necessary.
+
+With OpenAI configured, the planner requests structured output grounded in company knowledge, subscriber pace, billing, organic channels, experiments, reviewed approvals, memory, selected Drive excerpts and recent daily outcomes. Reference IDs must exist in stored evidence, and server validation rejects over-budget or malformed plans. Tasks include a deliverable, success criterion, rationale and source labels/Drive links. Model output can still be mistaken: review it before approving. Demo context is visibly labeled and stale or missing evidence should be flagged. Local mode uses clearly labeled prioritization rules; an OpenAI failure does not silently become a successful local generation.
+
+A plan is stored once per Eastern calendar date in PostgreSQL. Generating again does not overwrite existing work. Edit unfinished tasks instead; edits return them to Proposed. Approve an internal task, defer it, or complete an approved task with an observed outcome and optional actual minutes. Completion is a user report, not independent proof of success. Completed outcomes remain recorded and become institutional-memory observations. Planned time is bounded; actual time can exceed estimates and is recorded honestly. Deferred work is not automatically executed or copied; recent outcomes/blockers are available to the next generated plan.
+
+Save the end-of-day check-in to record outcomes, learnings and blockers. Revisions update one stable memory entry rather than create duplicates. The current plan and up to three recent daily summaries feed CMO context. The UI retains the last seven stored workdays for reference. Optimistic version checks reject edits based on a stale browser tab; refresh before retrying.
+
+Approving a Today task only accepts an internal work item. It does not approve or execute external publishing, spending, email, DMs or campaign changes. Use the separate approval workflow for external actions, then execute manually. No external executor or tools are registered.
+
+All mutations require an authenticated administrator and trusted origin. Task ownership within the selected plan and work budgets are validated transactionally. Shared company plans use an advisory lock/version guard for updates. Generation requests have a durable one-minute cooldown and a unique date constraint; failed generation retains existing plans. Audit events record creation and updates without exposing API credentials.
+
+## X paid advertising
+
+Advertiser account `18ce55xd2ys` was supplied by the owner. Paid X Ads reporting is **not connected or implemented** in the current organic provider. No ad spend, campaign delivery, CPC, CPM, CPA, ROAS or paid conversions are available to the CMO from organic X metrics. Workspace evidence explicitly marks this gap to prevent false inference.
+
+A separate read-only Ads API adapter needs verified Ads API developer access, an authorized advertiser-account role, and appropriate user-context OAuth credentials. The current app-only organic bearer token is insufficient. Before implementing that adapter, confirm the current official API version, account metadata, analytics schema, permissions, timezone, currency, attribution windows, pagination and rate limits. Preserve the working organic credentials and do not change campaigns, budgets or purchase access during discovery. No advertising API secret was configured during the Today implementation; only the supplied account ID is saved.

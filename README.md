@@ -132,3 +132,7 @@ The **Knowledge base** can import read-only Google Docs, plain-text and Markdown
 ## Daily sync
 
 Use **Sync all** in the header to fetch fresh provider data; the refresh icon only reloads stored records. Settings shows each full run's results. A separate Railway morning trigger schedules read-only imports at **4:00 a.m. America/New_York**, following daylight saving time. See [schedule, security and recovery](docs/SYNC.md).
+
+## Daily work planning
+
+**Today** turns stored evidence into three reviewable tasks within a 4–5 hour budget. Approve, edit, defer and record outcomes; an end-of-day check-in saves learning for tomorrow. Plans and progress persist in PostgreSQL, with no autonomous external actions. See [workflow and limitations](docs/TODAY.md). Paid X Ads reporting remains separate from the connected organic X provider.

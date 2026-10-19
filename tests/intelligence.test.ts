@@ -21,7 +21,9 @@ const context: Workspace = {
   stripe: { configured: false, products: [], scopeId: null, lastSync: null, summary: null },
   company,
   social: [],
+  xAds: { accountId: null, connected: false, note: 'Not connected' },
   syncHistory: [],
+  today: { date: '2026-10-18', current: null, history: [] },
   drive: {
     folderId: 'test',
     folderUrl: 'https://drive.google.com',

@@ -230,3 +230,40 @@ model SyncRun {
   completedAt  DateTime?
   results      Json
 }
+
+model DailyPlan {
+  id           String      @id @default(cuid())
+  date         DateTime    @unique @db.Date
+  budgetMinutes Int
+  summary      String
+  warnings     Json
+  provider     String
+  isDemo       Boolean     @default(false)
+  version      Int         @default(1)
+  createdAt    DateTime    @default(now())
+  dataAsOf     DateTime
+  checkIn      String      @default("")
+  learning     String      @default("")
+  blockers     String      @default("")
+  checkedInAt  DateTime?
+  tasks        TodayTask[]
+}
+
+model TodayTask {
+  id           String   @id @default(cuid())
+  planId       String
+  plan         DailyPlan @relation(fields:[planId], references:[id], onDelete:Cascade)
+  position     Int
+  title        String
+  minutes      Int
+  deliverable  String
+  successMetric String
+  rationale    String
+  evidence     Json
+  status       String   @default("PROPOSED")
+  outcome      String   @default("")
+  actualMinutes Int?
+  completedAt  DateTime?
+
+  @@unique([planId,position])
+}
