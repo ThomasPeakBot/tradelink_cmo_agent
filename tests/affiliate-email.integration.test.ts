@@ -299,7 +299,7 @@ it('syncs complete API snapshots by stable ID, preserves unsubscribes across cod
     .mockResolvedValueOnce(new Response(JSON.stringify(report('B', 10, 30))))
     .mockResolvedValueOnce(new Response('{}', { status: 503 }));
   vi.stubGlobal('fetch', request);
-  await expect(syncAffiliateReport(actor.email)).rejects.toThrow('Confirm permission');
+  await expect(syncAffiliateReport(actor.email)).rejects.toThrow('Confirm program email permission');
   await affiliateEmailAdmin(actor, { action: 'sync-api', confirmProgramEmailPermission: true });
   let contact = await db.affiliateMailContact.findUniqueOrThrow({ where: { id: `peakbot:${id}` } });
   expect(contact.baselineCount).toBe(9);
