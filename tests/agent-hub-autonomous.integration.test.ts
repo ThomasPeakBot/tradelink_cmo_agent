@@ -8,6 +8,7 @@ let state = 'approved';
 let posts = 0;
 let ackFailures = 0;
 let badVersion = false;
+let badAck = false;
 function evidence() {
   return { kind: 'tradelink_experiment_dry_run', mode: 'dry_run', side_effects: 'none', valid: true,
     validation: 'passed', requested_experiment_version: 'v1', experiment: { id: 'tradelink-creator-positioning', version: { label: badVersion ? 'v2' : 'v1', sha256: copyContract.definition_sha256 }, sources_sha256: copyContract.sources_sha256 },
@@ -27,7 +28,7 @@ function mockHub() {
     }
     if (url.endsWith('/delivered')) {
       if (ackFailures-- > 0) return Response.json({ error: 'unavailable' }, { status: 500 });
-      return Response.json({ id: taskId, state, result_delivered_at: new Date().toISOString() });
+      return Response.json({ id: taskId, state: badAck ? 'failed' : state, result_delivered_at: new Date().toISOString() });
     }
     return Response.json({ tasks: [{ id: taskId, payload_hash: payloadHash, target_agent: 'emailcreator', capability: 'prepare_experiment', state, outcome: evidence() }] });
   }));
@@ -39,7 +40,7 @@ describe('CMO durable autonomous QA on disposable PostgreSQL', () => {
     await qaPool().query('UPDATE cmo_hub_qa_controls SET paused=FALSE WHERE id=TRUE');
     vi.stubEnv('CMO_ENVIRONMENT', 'isolated_qa'); vi.stubEnv('CMO_HUB_QA_ENABLED', 'true');
     vi.stubEnv('CMO_HUB_ORIGIN', 'http://127.0.0.1:3200'); vi.stubEnv('CMO_HUB_AGENT_TOKEN', 'test-only-' + 'x'.repeat(48));
-    state = 'approved'; posts = 0; ackFailures = 0; badVersion = false; mockHub();
+    state = 'approved'; posts = 0; ackFailures = 0; badVersion = false; badAck = false; mockHub();
   });
   afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
   afterAll(closeQaPool);
@@ -69,6 +70,14 @@ describe('CMO durable autonomous QA on disposable PostgreSQL', () => {
     vi.stubEnv('CMO_HUB_QA_ENABLED', 'true'); await setQaPaused(true, 'qa-operator');
     expect((await autonomousQaTick('paused')).status).toBe('paused'); expect(posts).toBe(0);
     expect((await qaStatus()).runs).toHaveLength(0);
+  });
+  it('does not claim delivery when Hub acknowledges a different terminal result', async () => {
+    state = 'completed'; badAck = true;
+    expect((await autonomousQaTick('wrong-ack')).status).toBe('retrying');
+    expect((await qaStatus()).runs[0].result_delivered_at).toBeNull();
+    badAck = false; await due('wrong-ack');
+    expect((await autonomousQaTick('wrong-ack')).status).toBe('completed');
+    expect(posts).toBe(1);
   });
   it('blocks mismatched experiment evidence without acknowledging it', async () => {
     state = 'completed'; badVersion = true;
