@@ -19,6 +19,7 @@
     "test:prepare": "tsx scripts/prepare-tests.ts",
     "format": "prettier --write .",
     "admin:password": "tsx scripts/admin-password.ts",
+    "qa:agent-hub": "tsx scripts/agent-hub-qa.ts",
     "db:bootstrap": "tsx scripts/bootstrap.ts",
     "start:production": "sh scripts/start-production.sh"
   },

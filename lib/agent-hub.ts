@@ -61,10 +61,33 @@ export function buildSyntheticExperiment(now: Date = new Date()) {
   };
 }
 
+export function buildAutonomousQaExperiment(runId: string) {
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/.test(runId)) {
+    throw new HubError('A bounded QA run identifier is required.', 422);
+  }
+  const proposal = buildSyntheticExperiment(new Date('2026-10-20T12:00:00Z'));
+  return { ...proposal, idempotency_key: 'tradelink-creator-ab-v1-autonomous-qa-' + runId };
+}
+
+export function qaHubEnabled() {
+  return process.env.CMO_ENVIRONMENT === 'isolated_qa' && process.env.CMO_HUB_QA_ENABLED === 'true';
+}
+
 function credentials() {
   const token = process.env.CMO_HUB_AGENT_TOKEN;
   const origin = process.env.CMO_HUB_ORIGIN;
-  if (!token || token.length < 24 || origin !== EXPECTED_HUB_ORIGIN) {
+  let isolatedQaOrigin = false;
+  if (process.env.CMO_ENVIRONMENT === 'isolated_qa' && origin) {
+    try {
+      const url = new URL(origin);
+      isolatedQaOrigin = !url.username && !url.password && url.pathname === '/' &&
+        !url.search && !url.hash && (
+          (url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname)) ||
+          (url.protocol === 'https:' && url.hostname.endsWith('.up.railway.app'))
+        );
+    } catch { /* Invalid origins remain unavailable. */ }
+  }
+  if (!token || token.length < 24 || (!isolatedQaOrigin && origin !== EXPECTED_HUB_ORIGIN)) {
     throw new HubError('Agent Hub is not configured. No request was submitted.', 503);
   }
   return { token, origin };
@@ -72,10 +95,15 @@ function credentials() {
 
 export async function hubRequest(
   method: 'GET' | 'POST',
-  route: '/api/v1/agent/proposals' | '/api/v1/agent/submissions',
+  route: '/api/v1/agent/proposals' | '/api/v1/agent/submissions' | '/api/v1/agent/submissions?summary=true' | `/api/v1/agent/submissions?task_id=${string}` | '/api/v1/agent/heartbeat' | `/api/v1/agent/tasks/${string}/delivered`,
   payload?: unknown,
 ): Promise<Record<string, unknown>> {
   const { origin, token } = credentials();
+  if (!['/api/v1/agent/proposals', '/api/v1/agent/submissions', '/api/v1/agent/submissions?summary=true', '/api/v1/agent/heartbeat'].includes(route) &&
+      !/^\/api\/v1\/agent\/submissions\?task_id=[0-9a-f-]{36}$/.test(route) &&
+      !/^\/api\/v1\/agent\/tasks\/[0-9a-f-]{36}\/delivered$/.test(route)) {
+    throw new HubError('Unsupported Hub route.', 422);
+  }
   let response: Response;
   try {
     response = await fetch(origin + route, {
