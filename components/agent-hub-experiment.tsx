@@ -21,7 +21,26 @@ export function AgentHubExperiment() {
       setError(e instanceof Error ? e.message : 'Agent Hub unavailable');
     }
   }, []);
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/agent-hub', { cache: 'no-store', signal: controller.signal })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Agent Hub unavailable');
+        return data;
+      })
+      .then((data) => {
+        if (controller.signal.aborted) return;
+        setTasks(Array.isArray(data.tasks) ? data.tasks : []);
+        setConnected(true);
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        setConnected(false);
+        setError(error instanceof Error ? error.message : 'Agent Hub unavailable');
+      });
+    return () => controller.abort();
+  }, []);
 
   async function submit() {
     if (!window.confirm('Submit a SYNTHETIC dry-run experiment proposal to Agent Hub? This uses no real contacts and cannot send email.')) return;
