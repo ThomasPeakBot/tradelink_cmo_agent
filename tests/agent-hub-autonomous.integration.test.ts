@@ -37,7 +37,7 @@ describe('CMO durable autonomous QA on disposable PostgreSQL', () => {
   beforeEach(async () => {
     if (!process.env.DATABASE_URL?.split('?')[0].endsWith('_test')) throw new Error('Disposable _test database required');
     await qaPool().query('TRUNCATE cmo_hub_qa_events,cmo_hub_qa_runs RESTART IDENTITY CASCADE');
-    await qaPool().query('UPDATE cmo_hub_qa_controls SET paused=FALSE WHERE id=TRUE');
+    await qaPool().query('INSERT INTO cmo_hub_qa_controls(id,paused) VALUES(TRUE,FALSE) ON CONFLICT(id) DO UPDATE SET paused=FALSE');
     vi.stubEnv('CMO_ENVIRONMENT', 'isolated_qa'); vi.stubEnv('CMO_HUB_QA_ENABLED', 'true');
     vi.stubEnv('CMO_HUB_ORIGIN', 'http://127.0.0.1:3200'); vi.stubEnv('CMO_HUB_AGENT_TOKEN', 'test-only-' + 'x'.repeat(48));
     state = 'approved'; posts = 0; ackFailures = 0; badVersion = false; badAck = false; mockHub();
