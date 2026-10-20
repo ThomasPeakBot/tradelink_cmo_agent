@@ -594,7 +594,7 @@ export function OperatingSystem() {
                 {hasDemoContext(data)
                   ? 'Sample records are labeled DEMO. Replace assumptions before making business decisions.'
                   : data.stripe.lastSync
-                    ? 'Uses verified integration snapshots and manual inputs. Sync all refreshes connected sources; automatic sync runs at 4 a.m. Eastern. Enabled affiliate email rules run after sync.'
+                    ? 'Uses verified integration snapshots and manual inputs. Sync all refreshes connected sources; automatic sync runs at 4 a.m. Eastern. Enabled affiliate emails send at 9 a.m. Eastern.'
                     : 'Manual observations. Stripe has not been synced.'}
               </span>
             </span>
@@ -988,7 +988,7 @@ export function OperatingSystem() {
                   <p>
                     Automatic data sync: daily at 4:00 a.m. America/New_York (Eastern), following
                     daylight saving time. Configured Stripe, X, Instagram and Drive connections are
-                    included. Approved affiliate email automation runs afterward when enabled.
+                    included. Approved affiliate emails send at 9 a.m. Eastern when enabled.
                   </p>
                   <p>
                     The refresh icon only reloads the screen. Use Sync all to fetch new provider

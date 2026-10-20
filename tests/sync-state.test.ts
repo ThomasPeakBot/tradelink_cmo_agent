@@ -35,3 +35,15 @@ it('never labels failures or all-skipped providers as a successful import', () =
     'FAILED',
   );
 });
+
+it('allows email only at 9am Eastern through both DST transitions', () => {
+  for (const day of ['2026-03-08', '2026-07-01', '2026-10-21']) {
+    expect(easternSchedule(new Date(`${day}T12:59:59Z`), 9, true).due).toBe(false);
+    expect(easternSchedule(new Date(`${day}T13:00:00Z`), 9, true).due).toBe(true);
+    expect(easternSchedule(new Date(`${day}T14:00:00Z`), 9, true).due).toBe(false);
+  }
+  for (const day of ['2026-11-01', '2026-12-01']) {
+    expect(easternSchedule(new Date(`${day}T13:00:00Z`), 9, true).due).toBe(false);
+    expect(easternSchedule(new Date(`${day}T14:00:00Z`), 9, true).due).toBe(true);
+  }
+});

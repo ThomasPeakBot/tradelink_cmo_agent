@@ -16,7 +16,7 @@ export const syncResultsSchema = z.array(
   }),
 );
 export type SyncResult = z.infer<typeof syncResultsSchema>[number];
-export function easternSchedule(now = new Date()) {
+export function easternSchedule(now = new Date(), hour = 4, exact = false) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
     year: 'numeric',
@@ -26,7 +26,10 @@ export function easternSchedule(now = new Date()) {
     hourCycle: 'h23',
   }).formatToParts(now);
   const get = (type: string) => parts.find((p) => p.type === type)!.value;
-  return { day: `${get('year')}-${get('month')}-${get('day')}`, due: Number(get('hour')) >= 4 };
+  return {
+    day: `${get('year')}-${get('month')}-${get('day')}`,
+    due: exact ? Number(get('hour')) === hour : Number(get('hour')) >= hour,
+  };
 }
 export function batchStatus(results: SyncResult[]) {
   const data = results.filter((r) => r.provider !== 'alerts');

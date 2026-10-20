@@ -4,7 +4,7 @@ The workspace header's **Sync all** button fetches fresh data from configured St
 
 ## Daily schedule
 
-A separate small Railway `morning-sync` cron service invokes the web service's authenticated `POST /api/internal/sync`. Its cron expression is `0 8,9 * * *` (UTC), and the server gates execution using `America/New_York` and an Eastern calendar-day database key:
+A separate small Railway `morning-sync` cron service invokes the web service's authenticated `POST /api/internal/sync`. Its cron expression is `0 8,9,13,14 * * *` (UTC), and the server gates execution using `America/New_York` and an Eastern calendar-day database key:
 
 - During daylight saving time, 08:00 UTC is 4am Eastern; the 09:00 check is a no-op after completion.
 - During standard time, the 08:00 check is before 4am and does nothing; 09:00 UTC is 4am Eastern.
@@ -25,4 +25,4 @@ Unit checks cover winter/summer 4am mapping, both DST transitions, Eastern date 
 
 ## Approved affiliate email exception
 
-Reporting adapters remain read-only. After the reporting/alert stages, a separately approved affiliate email runner now participates in scheduled and manual full syncs. It is a no-op while paused or unconfigured. When the owner connects the verified sender, confirms rules/recipient permissions, approves template versions and explicitly enables automation, this stage can send affiliate emails through Gmail. All other external actions remain manual. See [affiliate email scopes, safeguards and prerequisites](AFFILIATE-EMAIL.md). No second cron was added.
+Reporting adapters remain read-only. Scheduled reporting at 4 a.m. never sends emails. At 13:00 and 14:00 UTC the same endpoint checks the 9 a.m. America/New_York email window and invokes the separately approved email runner only then, without repeating reporting imports. The other UTC check is a no-op after the daily reporting run. Manual full sync and standalone automation also honor the 9 a.m. email window. Durable event keys, advisory locking and recipient frequency caps prevent duplicate sends. It is a no-op while paused or unconfigured. When the owner connects the verified sender, confirms rules/recipient permissions, approves template versions and explicitly enables automation, this stage can send affiliate emails through Gmail. All other external actions remain manual. See [affiliate email scopes, safeguards and prerequisites](AFFILIATE-EMAIL.md). No second cron was added.

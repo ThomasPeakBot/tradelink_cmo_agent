@@ -143,7 +143,15 @@ export async function syncAll(actor: string, trigger: 'MANUAL' | 'SCHEDULED', no
     }
     if (!results.some((r) => r.provider === 'affiliate_email')) {
       try {
-        results.push({ provider: 'affiliate_email', ...(await runAffiliateEmail(actor)) });
+        results.push({
+          provider: 'affiliate_email',
+          ...(trigger === 'SCHEDULED'
+            ? {
+                status: 'SKIPPED' as const,
+                message: 'Affiliate emails are scheduled separately at 9 a.m. Eastern.',
+              }
+            : await runAffiliateEmail(actor, now)),
+        });
       } catch {
         results.push({
           provider: 'affiliate_email',

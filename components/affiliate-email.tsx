@@ -142,10 +142,11 @@ export function AffiliateEmail() {
                 {data.lastSnapshot ? new Date(data.lastSnapshot).toLocaleString() : 'none'}
               </p>
               <p>
-                Runs after the existing 4 a.m. Eastern sync. Data older than 36 hours holds sending.
-                Maximum one attempted delivery per affiliate per 24 hours and two per seven days. At
-                most 25 queued emails are attempted per run. A pause stops new send claims; an
-                already-started send may finish.
+                Sends daily at 9 a.m. Eastern, following daylight saving time. Reporting sync stays
+                at 4 a.m. Data older than 36 hours holds sending. Maximum one attempted delivery per
+                affiliate per 24 hours and two per seven days. At most 25 queued emails are
+                attempted per run. A pause stops new send claims; an already-started send may
+                finish.
               </p>
             </>
           )}
