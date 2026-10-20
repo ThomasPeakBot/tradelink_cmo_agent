@@ -38,6 +38,7 @@ function fixture() {
 }
 it('accepts complete TradeLink reports including zeros and unavailable contact fields', () => {
   expect(validateReport(fixture(), now).affiliates[1].email).toBeNull();
+  expect(validateReport({ ...fixture(), product: 'TradeLink by PeakBot' }, now).totalAffiliates).toBe(2);
 });
 it('rejects partial pages, duplicate IDs, campaign scope drift, unsupported rules and stale data', () => {
   for (const change of [

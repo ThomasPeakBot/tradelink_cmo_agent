@@ -23,7 +23,7 @@ const entry = z.object({
 });
 const reportSchema = z.object({
   asOf: z.string().datetime(),
-  product: z.literal('TradeLink'),
+  product: z.enum(['TradeLink', 'TradeLink by PeakBot']),
   campaignId: z.string().uuid(),
   countingRuleVersion: z.literal('v1'),
   totalAffiliates: z.number().int().min(0).max(1000),
