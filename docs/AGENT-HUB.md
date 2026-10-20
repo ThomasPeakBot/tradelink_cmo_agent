@@ -22,10 +22,11 @@ an explicitly clicked and admin-authorized proposal to Agent Hub.
 - Experiment start date is the first weekday at least 7 days after submission,
   with an explicitly labeled **business** cadence for synthetic QA. Live
   experiment day mode is NOT chosen or authorized by this demonstration.
-- Idempotency key is fixed for the synthetic demonstration. If a different
-  payload is submitted with the same key (e.g. a new start date a week later),
-  Hub returns 409. That is intentional. Do not silently make a new request
-  with changed terms; version any new synthetic scenario explicitly.
+- Idempotency key includes the explicitly computed synthetic start date. Repeated
+  submissions with identical terms on the same day reuse the same task, while
+  a click on another day creates a separate, human-approval-required synthetic
+  scenario. No submission is automatic; each click requests independent approval.
+  Changing any other terms must be deliberately versioned to avoid a 409.
 - Do not enable live email sending, install real lead identity access or
   connect verified signup/activation/affiliate events in this phase.
 

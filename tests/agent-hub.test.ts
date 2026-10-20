@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { buildSyntheticExperiment, HUB_AGENT_ID } from '../lib/agent-hub';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { buildSyntheticExperiment, HUB_AGENT_ID, hubRequest } from '../lib/agent-hub';
 
 describe('Agent Hub dry-run source contract', () => {
   it('uses only the allowed source/target and dry-run capability', () => {
@@ -28,7 +28,73 @@ describe('Agent Hub dry-run source contract', () => {
     const a = buildSyntheticExperiment(d);
     const b = buildSyntheticExperiment(d);
     expect(a).toEqual(b);
-    expect(a.idempotency_key).toBe('tradelink-creator-ab-v1-synthetic-qa-business-24');
+    expect(a.idempotency_key).toBe('tradelink-creator-ab-v1-synthetic-qa-business-24-2026-10-27');
     expect(a.payload.start_date).toBe('2026-10-27');
+  });
+});
+
+
+describe('Agent Hub server-side HTTP boundary', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+  const trusted = 'https://web-production-44a4c.up.railway.app';
+  const agentToken = 'synthetic-test-token-' + 'x'.repeat(48);
+
+  function setup() {
+    vi.stubEnv('CMO_HUB_ORIGIN', trusted);
+    vi.stubEnv('CMO_HUB_AGENT_TOKEN', agentToken);
+  }
+
+  it('rejects missing or wrong origin before making any outbound request', async () => {
+    const mock = vi.fn();
+    vi.stubGlobal('fetch', mock);
+    vi.stubEnv('CMO_HUB_ORIGIN', 'https://example.com');
+    vi.stubEnv('CMO_HUB_AGENT_TOKEN', agentToken);
+    await expect(hubRequest('GET', '/api/v1/agent/submissions')).rejects.toMatchObject({ status: 503 });
+    expect(mock).not.toHaveBeenCalled();
+  });
+
+  it('sends only the scoped CMO identity in a server-side Authorization header', async () => {
+    setup();
+    const mock = vi.fn(async () => new Response(JSON.stringify({tasks: []}), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    vi.stubGlobal('fetch', mock);
+    await expect(hubRequest('GET', '/api/v1/agent/submissions')).resolves.toEqual({ tasks: [] });
+    const [url, opts] = mock.mock.calls[0];
+    expect(url).toBe(trusted + '/api/v1/agent/submissions');
+    expect(opts.headers['X-Agent-Id']).toBe('tradelink-cmo');
+    expect(opts.headers.Authorization).toBe('Bearer ' + agentToken);
+    expect(opts.redirect).toBe('manual');
+    expect(opts.cache).toBe('no-store');
+  });
+
+  it('never follows Hub redirects or treats invalid responses as success', async () => {
+    setup();
+    const mock = vi.fn(async () => new Response(null, {
+      status: 302, headers: { location: 'https://attacker.test/capture' },
+    }));
+    vi.stubGlobal('fetch', mock);
+    await expect(hubRequest('GET', '/api/v1/agent/submissions')).rejects.toMatchObject({ status: 502 });
+    expect(mock).toHaveBeenCalledTimes(1);
+    mock.mockImplementation(async () => new Response('not json', { status: 200 }));
+    await expect(hubRequest('GET', '/api/v1/agent/submissions')).rejects.toMatchObject({ status: 502 });
+  });
+
+  it('rejects oversized Hub responses instead of returning unbounded data', async () => {
+    setup();
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('x'.repeat(70000), { status: 200 })));
+    await expect(hubRequest('GET', '/api/v1/agent/submissions')).rejects.toMatchObject({ status: 502 });
+  });
+
+  it('issues a fresh, explicit human-approved QA request for a new planned start date', () => {
+    const a = buildSyntheticExperiment(new Date('2026-10-20T12:00:00Z'));
+    const b = buildSyntheticExperiment(new Date('2026-10-21T12:00:00Z'));
+    expect(a.payload.start_date).not.toBe(b.payload.start_date);
+    expect(a.idempotency_key).not.toBe(b.idempotency_key);
+    expect(a.payload.mode).toBe('dry_run');
+    expect(b.payload.mode).toBe('dry_run');
   });
 });

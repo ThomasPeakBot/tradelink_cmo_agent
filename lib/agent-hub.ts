@@ -44,7 +44,7 @@ export function buildSyntheticExperiment(now: Date = new Date()) {
     target_agent: 'emailcreator',
     capability: 'prepare_experiment',
     subject: 'TradeLink creator positioning: affiliate-first vs user-first (synthetic QA)',
-    idempotency_key: 'tradelink-creator-ab-v1-synthetic-qa-business-24',
+    idempotency_key: 'tradelink-creator-ab-v1-synthetic-qa-business-24-' + startDate,
     payload: {
       mode: 'dry_run',
       experiment_id: 'tradelink-creator-positioning',
