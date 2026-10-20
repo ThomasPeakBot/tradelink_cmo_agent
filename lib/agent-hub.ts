@@ -22,7 +22,7 @@ export function buildSyntheticExperiment(now: Date = new Date()) {
   const fleet = [
     'gavynharris@getpeakbot.com',
     'gavynharris@partnerwithpeakbot.com',
-    'gavyn@peakbotpartners.com',
+    'gavynharris@peakbotpartners.com',
   ];
   const leads = Array.from({ length: 24 }, (_, i) => ({
     identity: {
