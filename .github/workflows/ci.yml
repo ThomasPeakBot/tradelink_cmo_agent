@@ -24,6 +24,12 @@ jobs:
         with:
           node-version: '24'
           cache: npm
+      - name: Install media tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends imagemagick ffmpeg
+          convert -version
+          ffmpeg -version
       - run: npm ci
       - run: npm run db:generate
       - run: npm run lint
