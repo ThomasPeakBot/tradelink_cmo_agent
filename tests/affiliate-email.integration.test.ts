@@ -217,6 +217,11 @@ it('holds a second milestone within 24 hours, sends after the cap clears, and ca
   await importAffiliateSnapshot(actor.email, csv(10), new Date(now.getTime() - 60000), now);
   await runAffiliateEmail(actor.email, now, transport);
   expect(transport.send).toHaveBeenCalledTimes(1);
+  // The simulated delivery clock must also anchor the rolling 24-hour cap.
+  await db.affiliateMailDelivery.updateMany({
+    where: { status: 'SENT' },
+    data: { attemptedAt: now, sentAt: now },
+  });
   await affiliateEmailAdmin(actor, {
     action: 'approve',
     id: 'affiliate-milestone-25',
