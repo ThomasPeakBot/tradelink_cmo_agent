@@ -1,7 +1,16 @@
 import { z } from 'zod';
 export const syncResultsSchema = z.array(
   z.object({
-    provider: z.enum(['stripe', 'x', 'instagram', 'x_ads', 'drive', 'alerts', 'affiliate_email']),
+    provider: z.enum([
+      'stripe',
+      'x',
+      'instagram',
+      'x_ads',
+      'drive',
+      'alerts',
+      'affiliate_email',
+      'affiliate_data',
+    ]),
     status: z.enum(['SUCCESS', 'FAILED', 'SKIPPED']),
     message: z.string(),
   }),

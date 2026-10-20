@@ -1,3 +1,8 @@
+import {
+  syncAffiliateReport,
+  permissionId,
+  affiliateReportingState,
+} from '../lib/affiliate-email/reporting';
 import { afterAll, afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { db } from '../lib/db';
 import { initializeAffiliateEmail, importAffiliateSnapshot } from '../lib/affiliate-email/data';
@@ -16,6 +21,10 @@ const header = 'code,email,name,affiliate_url,qualifying_referrals,rank,gap,emai
 const csv = (count: number) =>
   header + `alex,alex@example.invalid,Alex,https://example.invalid/ref,${count},2,2,yes`;
 async function clean() {
+  await db.memory.deleteMany({
+    where: { id: { in: [permissionId, 'peakbot-affiliate-reporting-failure'] } },
+  });
+  await db.report.deleteMany({ where: { id: 'peakbot-affiliate-reporting' } });
   await db.affiliateMailDelivery.deleteMany();
   await db.affiliateMailContact.deleteMany();
   await db.affiliateMailAccount.deleteMany();
@@ -36,6 +45,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await clean();
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
 });
 afterAll(() => db.$disconnect());
 async function ready() {
@@ -259,4 +269,55 @@ it('counts definite failed attempts toward the frequency limit so another trigge
       })
     ).status,
   ).toBe('QUEUED');
+});
+
+it('syncs complete API snapshots by stable ID, preserves unsubscribes across code changes and holds sending on failure', async () => {
+  vi.stubEnv('PEAKBOT_REPORT_KEY', 'fixture-report-key');
+  const id = '992f4f28-6a06-5412-b3d3-8ffd85637767';
+  const report = (code: string, count: number, seconds: number) => ({
+    asOf: new Date(Date.now() - seconds * 1000).toISOString(),
+    product: 'TradeLink',
+    campaignId: '6f1c2a7e-0000-4000-8000-000000000000',
+    countingRuleVersion: 'v1',
+    totalAffiliates: 1,
+    affiliates: [
+      {
+        affiliateId: id,
+        code,
+        rank: 1,
+        activeReferralCount: count,
+        name: 'Alex',
+        email: 'alex@example.invalid',
+        referralLink: 'https://example.invalid/ref',
+      },
+    ],
+    nextCursor: null,
+  });
+  const request = vi
+    .fn()
+    .mockResolvedValueOnce(new Response(JSON.stringify(report('A', 9, 60))))
+    .mockResolvedValueOnce(new Response(JSON.stringify(report('B', 10, 30))))
+    .mockResolvedValueOnce(new Response('{}', { status: 503 }));
+  vi.stubGlobal('fetch', request);
+  await expect(syncAffiliateReport(actor.email)).rejects.toThrow('Confirm program email permission');
+  await affiliateEmailAdmin(actor, { action: 'sync-api', confirmProgramEmailPermission: true });
+  let contact = await db.affiliateMailContact.findUniqueOrThrow({ where: { id: `peakbot:${id}` } });
+  expect(contact.baselineCount).toBe(9);
+  expect(contact.previousCount).toBe(9);
+  expect((await db.affiliateMailSettings.findFirstOrThrow()).enabled).toBe(false);
+  expect(await db.affiliateMailDelivery.count()).toBe(0);
+  await db.affiliateMailContact.update({
+    where: { id: contact.id },
+    data: { unsubscribedAt: now },
+  });
+  await syncAffiliateReport(actor.email);
+  contact = await db.affiliateMailContact.findUniqueOrThrow({ where: { id: contact.id } });
+  expect(contact.code).toBe('B');
+  expect(contact.count).toBe(10);
+  expect(contact.unsubscribedAt).not.toBeNull();
+  expect(contact.baselineCount).toBe(9);
+  await expect(syncAffiliateReport(actor.email)).rejects.toThrow('HTTP 503');
+  expect((await affiliateReportingState()).blocked).toBe(true);
+  expect((await db.affiliateMailContact.findFirstOrThrow()).count).toBe(10);
+  expect(await db.affiliateMailDelivery.count()).toBe(0);
 });

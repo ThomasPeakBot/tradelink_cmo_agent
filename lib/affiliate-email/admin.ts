@@ -1,3 +1,4 @@
+import { affiliateReportingState, syncAffiliateReport, permissionId } from './reporting';
 import { z } from 'zod';
 import { db } from '../db';
 import {
@@ -56,6 +57,7 @@ export async function affiliateEmailState() {
     lastSnapshot: lastSnapshot?.snapshotAt ?? null,
     oauthConfigured: config.configured,
     redirectUri: config.redirectUri,
+    reporting: await affiliateReportingState(),
   };
 }
 const https = z
@@ -89,6 +91,21 @@ export async function affiliateEmailAdmin(
     return {
       imported: await importAffiliateSnapshot(actor.email, input.csv, new Date(input.capturedAt)),
     };
+  }
+  if (action === 'sync-api') {
+    if (body.confirmProgramEmailPermission !== true)
+      throw Error('Confirm permission for affiliate program communications.');
+    await db.memory.upsert({
+      where: { id: permissionId },
+      create: {
+        id: permissionId,
+        title: 'Owner-confirmed affiliate program email permission',
+        kind: 'CONSTRAINT',
+        content: `Owner ${actor.email} confirms TradeLink affiliates may receive program communications under their agreement. Existing unsubscribe choices remain effective.`,
+      },
+      update: {},
+    });
+    return syncAffiliateReport(actor.email);
   }
   if (action === 'run') return runAffiliateEmail(actor.email);
   await db.$transaction(async (tx) => {
@@ -204,6 +221,7 @@ export async function affiliateEmailAdmin(
           account?.email !== sender ||
           !emailReadiness(config, new Date()) ||
           !contact ||
+          (await affiliateReportingState()).blocked ||
           !templates.some((t) => t.approvedVersion === t.version)
         )
           throw Error(

@@ -199,7 +199,7 @@ export function AffiliateEmail() {
                   />
                 </label>
                 <label>
-                  Competition ends (UTC)
+                  Automatic email cutoff (UTC)
                   <input
                     name="endsAt"
                     type="datetime-local"
@@ -233,9 +233,11 @@ export function AffiliateEmail() {
             </form>
             <div className="record-body">
               <p>
-                Weekly updates run Mondays. Milestones trigger only on new verified crossings of 10,
-                25, 50 and 100 after the initial baseline; the highest eligible milestone is
-                prepared first. Rank alerts require a verified gap of 1–3 qualifying referrals.
+                The cutoff pauses emails for review; it does not declare the competition over. The
+                competition ends only after six weeks and 500 subscribers. Weekly updates run
+                Mondays. Milestones trigger only on new verified crossings of 10, 25, 50 and 100
+                after the initial baseline; the highest eligible milestone is prepared first. Rank
+                alerts require a verified gap of 1–3 qualifying referrals.
               </p>
               {data.settings.enabled ? (
                 <button
@@ -269,10 +271,36 @@ export function AffiliateEmail() {
             </div>
             <div className="record-body">
               <p>
-                The private affiliate app has no connected data adapter yet. Import a complete,
-                owner-verified snapshot here. Missing affiliates are held, and existing unsubscribe
-                choices are preserved. The first import establishes a milestone baseline; historical
+                The API uses stable affiliate IDs and TradeLink counting rule v1. Counts are
+                subscriptions, including fully discounted subscriptions and paused payment
+                collection under that rule. The first sync establishes a baseline; historical
                 milestones are not emailed.
+              </p>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  act({ action: 'sync-api', confirmProgramEmailPermission: true });
+                }}
+              >
+                <p>
+                  {data.reporting.configured
+                    ? 'Reporting key configured.'
+                    : 'Reporting key not configured on web.'}
+                  {data.reporting.blocked ? ' Last sync failed; sending held.' : ''}
+                </p>
+                <label>
+                  <input type="checkbox" required /> I confirm TradeLink affiliates may receive
+                  program emails under our agreement. Existing unsubscribes remain effective.
+                </label>
+                <button className="btn primary" disabled={busy || !data.reporting.configured}>
+                  Sync affiliate API
+                </button>
+              </form>
+              <p>
+                Alternatively, use a verified CSV. Import a complete, owner-verified snapshot here.
+                Missing affiliates are held, and existing unsubscribe choices are preserved. The
+                first import establishes a milestone baseline; historical milestones are not
+                emailed.
               </p>
               <p>
                 CSV columns:{' '}

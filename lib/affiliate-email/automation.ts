@@ -1,3 +1,4 @@
+import { affiliateReportingState } from './reporting';
 import { Client } from 'pg';
 import type {
   AffiliateMailContact,
@@ -65,10 +66,12 @@ export function contactValues(contact: AffiliateMailContact, settings: Affiliate
     leaderboard_url: 'https://affiliate.peakbot.com/leaderboard',
     rules_url: settings.rulesUrl,
     closing_date:
-      settings.endsAt?.toLocaleString('en-US', {
+      'no earlier than ' +
+      (settings.endsAt?.toLocaleString('en-US', {
         timeZone: 'America/New_York',
         timeZoneName: 'short',
-      }) || '',
+      }) || '') +
+      '; the competition also requires TradeLink to reach 500 subscribers',
     snapshot_time: contact.snapshotAt.toLocaleString('en-US', {
       timeZone: 'America/New_York',
       timeZoneName: 'short',
@@ -102,6 +105,11 @@ export async function runAffiliateEmail(
         message: 'Affiliate email automation is already running.',
       };
     const settings = await db.affiliateMailSettings.findUnique({ where: { id: settingsId } });
+    if ((await affiliateReportingState()).blocked)
+      return {
+        status: 'SKIPPED' as const,
+        message: 'Latest affiliate API sync failed; sending held until a successful sync.',
+      };
     if (!settings?.enabled)
       return { status: 'SKIPPED' as const, message: 'Affiliate email automation is paused.' };
     if (

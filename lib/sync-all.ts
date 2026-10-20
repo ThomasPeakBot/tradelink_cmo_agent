@@ -1,3 +1,4 @@
+import { affiliateReportingState, syncAffiliateReport } from './affiliate-email/reporting';
 import { runAffiliateEmail } from './affiliate-email/automation';
 import { syncXAds } from './x-ads-sync';
 import { xAdsConfiguration } from './x-ads';
@@ -58,7 +59,13 @@ export async function syncAll(actor: string, trigger: 'MANUAL' | 'SCHEDULED', no
         data: { actor, trigger, scheduledDay: trigger === 'SCHEDULED' ? day : null, results: [] },
       }));
     const results = syncResultsSchema.parse(run.results);
+    const affiliateReporting = await affiliateReportingState();
     const tasks = [
+      {
+        provider: 'affiliate_data' as const,
+        configured: affiliateReporting.configured && affiliateReporting.permitted,
+        execute: () => syncAffiliateReport(actor),
+      },
       {
         provider: 'x_ads' as const,
         configured: xAdsConfiguration().configured,
