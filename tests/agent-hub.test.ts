@@ -58,17 +58,20 @@ describe('Agent Hub server-side HTTP boundary', () => {
 
   it('sends only the scoped CMO identity in a server-side Authorization header', async () => {
     setup();
-    const mock = vi.fn(async () => new Response(JSON.stringify({tasks: []}), {
-      status: 200, headers: { 'content-type': 'application/json' },
-    }));
+    const mock = vi.fn(async (_input: RequestInfo | URL, _options?: RequestInit) =>
+      new Response(JSON.stringify({tasks: []}), {
+        status: 200, headers: { 'content-type': 'application/json' },
+      }));
     vi.stubGlobal('fetch', mock);
     await expect(hubRequest('GET', '/api/v1/agent/submissions')).resolves.toEqual({ tasks: [] });
     const [url, opts] = mock.mock.calls[0];
+    const request = opts as RequestInit;
+    const headers = request.headers as Record<string, string>;
     expect(url).toBe(trusted + '/api/v1/agent/submissions');
-    expect(opts.headers['X-Agent-Id']).toBe('tradelink-cmo');
-    expect(opts.headers.Authorization).toBe('Bearer ' + agentToken);
-    expect(opts.redirect).toBe('manual');
-    expect(opts.cache).toBe('no-store');
+    expect(headers['X-Agent-Id']).toBe('tradelink-cmo');
+    expect(headers.Authorization).toBe('Bearer ' + agentToken);
+    expect(request.redirect).toBe('manual');
+    expect(request.cache).toBe('no-store');
   });
 
   it('never follows Hub redirects or treats invalid responses as success', async () => {
