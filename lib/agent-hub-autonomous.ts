@@ -153,7 +153,11 @@ export async function autonomousQaTick(runId: string, intervalSeconds = 5) {
         [runId, evidence, task.state, task.workflow_id ?? run.workflow_id]);
         if (!run.result_received_at) await event(client, runId, 'result_received', { task_id: run.task_id, hub_state: task.state, validation: evidence.validation });
         const ack = await hubRequest('POST', `/api/v1/agent/tasks/${run.task_id}/delivered`, { payload_hash: payloadHash });
-        if (ack.id !== run.task_id || !ack.result_delivered_at) throw new HubError('Hub has not confirmed result delivery.', 503);
+        if (ack.id !== run.task_id || ack.state !== task.state ||
+            (task.workflow_id && ack.workflow_id !== task.workflow_id) ||
+            typeof ack.result_delivered_at !== 'string' || !Number.isFinite(Date.parse(ack.result_delivered_at))) {
+          throw new HubError('Hub has not confirmed matching result delivery.', 503);
+        }
         await client.query(`UPDATE cmo_hub_qa_runs SET result_delivered_at=$2,state=$3,consecutive_failures=0,
           next_run_at=NULL,last_error=NULL,updated_at=now() WHERE run_id=$1`, [runId, ack.result_delivered_at, task.state]);
         await event(client, runId, 'result_delivered', { task_id: run.task_id, outcome: task.state });
