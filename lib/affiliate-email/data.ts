@@ -180,7 +180,8 @@ export async function affiliateEmailEvidence() {
     templates,
     eligibleAffiliateCount: contacts._count,
     snapshotAt: contacts._max.snapshotAt,
-    dataSource: 'Owner-verified CSV; live affiliate API not connected.',
+    dataSource:
+      'Verified affiliate snapshots from PeakBot Reporting API or owner-imported CSV; recipients and credentials excluded from AI evidence.',
     boundary:
       'Only approved template versions and rules can send when automation is explicitly enabled. CMO chat itself cannot send, change templates or enable automation. No recipients or credentials included in this evidence.',
   };
