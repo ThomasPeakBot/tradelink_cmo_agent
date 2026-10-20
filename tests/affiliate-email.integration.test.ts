@@ -16,7 +16,17 @@ import {
   GmailSendError,
 } from '../lib/affiliate-email/google';
 const actor = { id: 'affiliate-fixture-admin', email: 'affiliate-fixture@example.invalid' };
+// Exercise delivery during its Eastern window regardless of the CI runner's clock.
 const now = new Date();
+now.setUTCHours(13, 0, 0, 0);
+if (
+  new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    hour: 'numeric',
+    hourCycle: 'h23',
+  }).format(now) === '08'
+)
+  now.setUTCHours(14);
 const header = 'code,email,name,affiliate_url,qualifying_referrals,rank,gap,email_permission\n';
 const csv = (count: number) =>
   header + `alex,alex@example.invalid,Alex,https://example.invalid/ref,${count},2,2,yes`;
@@ -207,6 +217,11 @@ it('holds a second milestone within 24 hours, sends after the cap clears, and ca
   await importAffiliateSnapshot(actor.email, csv(10), new Date(now.getTime() - 60000), now);
   await runAffiliateEmail(actor.email, now, transport);
   expect(transport.send).toHaveBeenCalledTimes(1);
+  // The simulated delivery clock must also anchor the rolling 24-hour cap.
+  await db.affiliateMailDelivery.updateMany({
+    where: { status: 'SENT' },
+    data: { attemptedAt: now, sentAt: now },
+  });
   await affiliateEmailAdmin(actor, {
     action: 'approve',
     id: 'affiliate-milestone-25',
@@ -299,7 +314,9 @@ it('syncs complete API snapshots by stable ID, preserves unsubscribes across cod
     .mockResolvedValueOnce(new Response(JSON.stringify(report('B', 10, 30))))
     .mockResolvedValueOnce(new Response('{}', { status: 503 }));
   vi.stubGlobal('fetch', request);
-  await expect(syncAffiliateReport(actor.email)).rejects.toThrow('Confirm program email permission');
+  await expect(syncAffiliateReport(actor.email)).rejects.toThrow(
+    'Confirm program email permission',
+  );
   await affiliateEmailAdmin(actor, { action: 'sync-api', confirmProgramEmailPermission: true });
   let contact = await db.affiliateMailContact.findUniqueOrThrow({ where: { id: `peakbot:${id}` } });
   expect(contact.baselineCount).toBe(9);
@@ -320,4 +337,12 @@ it('syncs complete API snapshots by stable ID, preserves unsubscribes across cod
   expect((await affiliateReportingState()).blocked).toBe(true);
   expect((await db.affiliateMailContact.findFirstOrThrow()).count).toBe(10);
   expect(await db.affiliateMailDelivery.count()).toBe(0);
+});
+
+it('does not queue or send outside the 9am Eastern window', async () => {
+  const transport = { accessToken: vi.fn(), send: vi.fn() };
+  const result = await runAffiliateEmail(actor.email, new Date(now.getTime() - 3600000), transport);
+  expect(result.status).toBe('SKIPPED');
+  expect(transport.accessToken).not.toHaveBeenCalled();
+  expect(transport.send).not.toHaveBeenCalled();
 });

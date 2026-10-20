@@ -83,6 +83,11 @@ export async function runAffiliateEmail(
   now = new Date(),
   transport = { accessToken: gmailAccessToken, send: gmailSend },
 ) {
+  if (!easternSchedule(now, 9, true).due)
+    return {
+      status: 'SKIPPED' as const,
+      message: 'Affiliate emails send at 9 a.m. America/New_York.',
+    };
   const deadline = Date.now() + 120000;
   const connection = new Client({
     connectionString: process.env.DATABASE_URL,
