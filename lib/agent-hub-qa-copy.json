@@ -1,0 +1,124 @@
+{
+  "definition_sha256": "f4c7983c188f301a7b42c9215249f03e25c138be8a9eec69dcb389fe9af4fc44",
+  "sources_sha256": "f1368be010cf2baa8278ceed0107a7e4ca9980d68de401548c056bc3c8d0d7a4",
+  "variants": {
+    "A": {
+      "touches": [
+        {
+          "tp": 1,
+          "day_offset": 1,
+          "subject_sha256": "39fa1685d3e3e74c0c4282f7e489c5b5537d6aae566202c2af90da7eded96574",
+          "body_sha256": "590f037c51ef668e4187cba0716d33c62a47a556cda44d8ff0d349968c3728c2",
+          "source_fidelity": {
+            "subject": "exact",
+            "body": "exact_with_declared_deviations"
+          },
+          "channel": "email"
+        },
+        {
+          "tp": 2,
+          "day_offset": 4,
+          "subject_sha256": "0ecb4ba7c24a90fbc386473698d5e12978e753e825a773c3e977d486bdd7955b",
+          "body_sha256": "3d5951cdefe686ad4402157d1a53e560594c80e8ee65c104964f8e2495efa5f9",
+          "source_fidelity": {
+            "subject": "exact",
+            "body": "exact_with_declared_deviations"
+          },
+          "channel": "email"
+        },
+        {
+          "tp": 3,
+          "day_offset": 8,
+          "subject_sha256": "ddf248e62a64c7158fb818950f7c2d9cf4293118b3ef772b8e1c114ba1550d36",
+          "body_sha256": "722ae7c00dd35eca89e739860ddfa52425735c713fe875d2fbb97b8e05a2f529",
+          "source_fidelity": {
+            "subject": "exact",
+            "body": "exact_with_declared_deviations"
+          },
+          "channel": "email"
+        },
+        {
+          "tp": 4,
+          "day_offset": 13,
+          "subject_sha256": "28a88eeb3ab54feb033b1b7d48e13038da2b8c814e59202ffdc257c3e59d6638",
+          "body_sha256": "075372b26f9bca84b69175993c0d8a2266d93657a70ca99c236448baf19b0948",
+          "source_fidelity": {
+            "subject": "exact",
+            "body": "exact_with_declared_deviations"
+          },
+          "channel": "email"
+        },
+        {
+          "tp": 5,
+          "day_offset": 20,
+          "subject_sha256": "bf99e9f5d6adb2368d857a6e31a7b663b32f4d23a2728e89b72566318b3599c3",
+          "body_sha256": "85fe00d6daa63e058cb46ec8f81128b39223c7f8e863d26035206f42e310a268",
+          "source_fidelity": {
+            "subject": "exact",
+            "body": "exact_with_declared_deviations"
+          },
+          "channel": "email"
+        }
+      ]
+    },
+    "B": {
+      "touches": [
+        {
+          "tp": 1,
+          "day_offset": 1,
+          "subject_sha256": "74dff77374510789e6477307c5b9e7cf667f61ac0321ee3ae7d51226c1422fe1",
+          "body_sha256": "0b6be1928facda3930321ae98f0c00e81105df68e0c1b8fa146cc3a83ea41a09",
+          "source_fidelity": {
+            "subject": "exact",
+            "body": "exact_with_declared_deviations"
+          },
+          "channel": "email"
+        },
+        {
+          "tp": 2,
+          "day_offset": 4,
+          "subject_sha256": "1622f3616edd54dc6940c05f54ad9f20dd77caa49f3d10a433219c48a4edf287",
+          "body_sha256": "f89891e2c89b1193a02448b1325600e5ad60ef0b14160e5cfd31da08dcee5e7d",
+          "source_fidelity": {
+            "subject": "exact",
+            "body": "exact_with_declared_deviations"
+          },
+          "channel": "email"
+        },
+        {
+          "tp": 3,
+          "day_offset": 8,
+          "subject_sha256": "e81a33fe34b0c81a2de50526870201a6d56d20d8b62b1f944e221f4a257bbe47",
+          "body_sha256": "6191ab8a6d095a23eb509d937a1ba7defde0cc2c6a4307f5e605270d7131014c",
+          "source_fidelity": {
+            "subject": "exact",
+            "body": "exact_with_declared_deviations"
+          },
+          "channel": "email"
+        },
+        {
+          "tp": 4,
+          "day_offset": 13,
+          "subject_sha256": "661a4f5b238fd729c5c691bc50532889ebf846dfeb029ed8c29a5a01732bf5cf",
+          "body_sha256": "3ae1f9509331c83519259666d2f3c00ede54a75cb1142cb0ce99d91261478e86",
+          "source_fidelity": {
+            "subject": "exact",
+            "body": "exact_with_declared_deviations"
+          },
+          "channel": "email"
+        },
+        {
+          "tp": 5,
+          "day_offset": 20,
+          "subject_sha256": "178531366cb6206b08c547daf97dda7a4a20f0c292dfb38ea218021ae9657f8e",
+          "body_sha256": "0a2f1de36586fad3d54fbc0c59d87d76d1c3f9eb607067bdc0a019dcc608813f",
+          "source_fidelity": {
+            "subject": "exact",
+            "body": "exact_with_declared_deviations"
+          },
+          "channel": "email"
+        }
+      ]
+    }
+  }
+}

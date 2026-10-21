@@ -45,6 +45,10 @@ async function clean() {
   await db.auditLog.deleteMany({ where: { OR: [{ actor: actor.email }, { actor: actor.id }] } });
 }
 beforeEach(async () => {
+  // Admin freshness checks must use the same clock as the simulated delivery window.
+  // Fake Date only: PostgreSQL I/O and retry timers remain real.
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(now);
   vi.stubEnv('APP_URL', 'https://cmo.example.invalid');
   vi.stubEnv('GOOGLE_EMAIL_CLIENT_ID', 'fixture-id');
   vi.stubEnv('GOOGLE_EMAIL_CLIENT_SECRET', 'fixture-secret');
@@ -54,6 +58,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   await clean();
+  vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });

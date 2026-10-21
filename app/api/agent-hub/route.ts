@@ -25,7 +25,7 @@ export async function GET() {
   const denied = await administrator();
   if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
   try {
-    const data = await hubRequest('GET', '/api/v1/agent/submissions');
+    const data = await hubRequest('GET', '/api/v1/agent/submissions?summary=true');
     return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     return failure(error);

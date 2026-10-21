@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import { AgentHubAutonomous } from './agent-hub-autonomous';
 
 type Task = { id: string; subject: string; state: string; outcome?: Record<string, unknown> | null };
 export function AgentHubExperiment() {
@@ -65,7 +66,7 @@ export function AgentHubExperiment() {
   }
   const ours = tasks.filter((t) => t.subject.includes('TradeLink creator positioning')).slice(0, 10);
   return (
-    <section className="panel">
+    <><AgentHubAutonomous /><section className="panel">
       <div className="panel-head">
         <div>
           <h3>PeakBot Agent Hub handoff</h3>
@@ -101,6 +102,6 @@ export function AgentHubExperiment() {
           </div>
         ))}
       </div>
-    </section>
+    </section></>
   );
 }
