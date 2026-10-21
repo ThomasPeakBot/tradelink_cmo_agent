@@ -1,12 +1,16 @@
 import 'dotenv/config';
 import { autonomousQaTick, closeQaPool } from '../lib/agent-hub-autonomous';
 import { hubRequest, qaHubEnabled } from '../lib/agent-hub';
+import { assertQaRunnerConfig } from '../lib/agent-hub-runner-config';
 
 let stopping = false;
+let configurationValidated = false;
 process.on('SIGINT', () => { stopping = true; });
 process.on('SIGTERM', () => { stopping = true; });
 async function main() {
   if (!qaHubEnabled()) { console.log(JSON.stringify({ status: 'disabled', qa_only: true })); return; }
+  assertQaRunnerConfig(process.env);
+  configurationValidated = true;
   const runId = process.env.CMO_HUB_QA_RUN_ID || '';
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/.test(runId)) throw new Error('CMO_HUB_QA_RUN_ID is required');
   const interval = Math.max(1, Math.min(60, Number(process.env.CMO_HUB_QA_INTERVAL_SECONDS || 5)));
@@ -32,6 +36,6 @@ async function main() {
 }
 main().catch(() => { console.error('CMO QA runner failed; inspect the durable run status.'); process.exitCode = 1; })
   .finally(async () => {
-    if (qaHubEnabled()) await hubRequest('POST', '/api/v1/agent/heartbeat', { state: 'paused', version: 'autonomous-qa-v1' }).catch(() => {});
+    if (configurationValidated) await hubRequest('POST', '/api/v1/agent/heartbeat', { state: 'paused', version: 'autonomous-qa-v1' }).catch(() => {});
     await closeQaPool();
   });
