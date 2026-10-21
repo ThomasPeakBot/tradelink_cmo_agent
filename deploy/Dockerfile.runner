@@ -2,7 +2,8 @@ FROM node:24-bookworm-slim
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1 NPM_CONFIG_CACHE=/tmp/cmo-qa-npm
 COPY --chown=node:node package.json package-lock.json .npmrc ./
-# Railway rejects BuildKit secret mounts; normal npm TLS checks remain enabled.\nRUN npm ci
+# Railway rejects BuildKit secret mounts; normal npm TLS checks remain enabled.
+RUN npm ci
 # Deliberately omit the web server, CRM routes, bootstrap and production scripts.
 COPY --chown=node:node lib/agent-hub.ts lib/agent-hub-autonomous.ts lib/agent-hub-runner-config.ts lib/agent-hub-qa-copy.json ./lib/
 COPY --chown=node:node scripts/agent-hub-qa.ts ./scripts/
