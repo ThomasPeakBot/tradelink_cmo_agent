@@ -1,9 +1,8 @@
+# Isolated QA runner deployment overlay. DO NOT MERGE into the CMO web branch.
+# Railway auto-applies this root file ahead of service build settings.
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "deploy/Dockerfile.runner"
 
 [deploy]
-healthcheckPath = "/api/health"
-healthcheckTimeout = 120
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 5
+restartPolicyType = "NEVER"
