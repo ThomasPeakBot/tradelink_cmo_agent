@@ -1,6 +1,7 @@
 'use client';
 import { useState, type FormEvent } from 'react';
 import { TaskDiscussion } from './task-discussion';
+import { DeferredWork } from './deferred-work';
 import type { Workspace } from '@/lib/workspace';
 type Json<T> = T extends Date
   ? string
@@ -27,6 +28,8 @@ export function Today({ data, mutate }: { data: Json<Workspace>; mutate: Mutate 
     plan?.tasks.filter((t) => t.status !== 'DEFERRED').reduce((n, t) => n + t.minutes, 0) ?? 0;
   const sources: Record<string, { label: string; url?: string }> = Object.fromEntries([
     ['workspace', { label: 'Workspace evidence and gaps' }],
+    ...data.operatingContext.completedWork.map((t) => [t.id, { label: t.title }]),
+    ...data.operatingContext.unfinishedDeferredWork.map((t) => [t.id, { label: t.title }]),
     ['growth', { label: 'Subscriber pace and forecast' }],
     ['stripe', { label: 'Stripe billing snapshot' }],
     ...data.knowledge.map((r) => [`knowledge:${r.id}`, { label: r.title }]),
@@ -52,6 +55,7 @@ export function Today({ data, mutate }: { data: Json<Workspace>; mutate: Mutate 
   }
   return (
     <>
+      <DeferredWork tasks={data.operatingContext.unfinishedDeferredWork} mutate={mutate} />
       <div className="today-intro">
         <div>
           <span className="eyebrow">FOCUS / {data.today.date} · EASTERN</span>
@@ -277,6 +281,14 @@ function TaskCard({
             ))}
           </small>
         </p>
+        {task.prerequisiteTaskIds.length > 0 && (
+          <p>
+            <strong>Recorded prerequisites:</strong>{' '}
+            {task.prerequisiteTaskIds
+              .map((id) => sources[id]?.label || 'Previously recorded task')
+              .join(' · ')}
+          </p>
+        )}
         <TaskDiscussion task={task} mutate={mutate} />
         {task.guide ? (
           <TaskGuide guide={task.guide} />

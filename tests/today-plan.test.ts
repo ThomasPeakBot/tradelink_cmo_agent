@@ -142,3 +142,60 @@ it('replacement considers the owner reason and rejects duplicate or over-budget 
     );
   expect((await generateReplacement(workspace, context, success)).provider).toBe('AI replacement');
 });
+
+it('discards a semantically blocked plan and regenerates independent work with review feedback', async () => {
+  const operatingContext = {
+    unfinishedDeferredWork: [
+      {
+        id: 'landing-page',
+        title: 'Build landing page',
+        status: 'DEFERRED',
+        reason: 'Missing approved creative assets',
+        outcome: 'Missing approved creative assets',
+        date: '2026-01-01',
+        prerequisiteTaskIds: [],
+      },
+    ],
+    completedWork: [],
+    ownerStatements: [],
+  };
+  const w = { ...workspace, operatingContext } as Workspace;
+  const initial = (await generateTodayDraft(workspace, 270, 'local')).draft;
+  initial.tasks[0].title = 'Launch paid traffic to the landing page';
+  const safe = (await generateTodayDraft(w, 270, 'local')).draft;
+  vi.stubEnv('OPENAI_API_KEY', 'fixture-key');
+  vi.stubEnv('TRADELINK_OPENAI_API_KEY', '');
+  const reply = (value: unknown) =>
+    new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(value) } }] }));
+  const fetcher = vi
+    .fn()
+    .mockResolvedValueOnce(reply(initial))
+    .mockResolvedValueOnce(
+      reply({
+        results: initial.tasks.map((_, index) => ({
+          index,
+          ready: index !== 0,
+          prerequisiteTaskIds: index === 0 ? ['landing-page'] : [],
+          reason: index === 0 ? 'The landing page is still deferred.' : 'Independent work.',
+        })),
+      }),
+    )
+    .mockResolvedValueOnce(reply(safe))
+    .mockResolvedValueOnce(
+      reply({
+        results: safe.tasks.map((_, index) => ({
+          index,
+          ready: true,
+          prerequisiteTaskIds: [],
+          reason: 'Independent paper-only preparation.',
+        })),
+      }),
+    );
+  const result = await generateTodayDraft(w, 270, 'auto', fetcher);
+  expect(
+    result.draft.tasks.some((t) => t.title === 'Launch paid traffic to the landing page'),
+  ).toBe(false);
+  expect(result.draft.tasks[0].title).toBe('Draft an independent creative growth hypothesis');
+  expect(fetcher).toHaveBeenCalledTimes(4);
+  expect(String(fetcher.mock.calls[2][1].body)).toContain('landing page is still deferred');
+});

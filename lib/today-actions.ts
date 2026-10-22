@@ -1,3 +1,4 @@
+import { assessTaskReadiness } from './task-readiness';
 import { generateReplacement } from './today-replacement';
 import { Prisma } from '@prisma/client';
 import { attachTaskGuide } from './today-guidance';
@@ -14,6 +15,57 @@ export async function todayAction(
   actor: { id: string; email: string },
   body: Record<string, unknown>,
 ) {
+  if (body.action === 'complete-deferred') {
+    const input = z
+      .object({
+        action: z.literal('complete-deferred'),
+        taskId: id,
+        outcome: z.string().trim().min(1).max(3000),
+      })
+      .strict()
+      .parse(body);
+    await db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(74182360)`;
+      const task = await tx.todayTask.findUnique({
+        where: { id: input.taskId },
+        include: { plan: true },
+      });
+      if (!task || task.status !== 'DEFERRED')
+        throw new TodayError('Choose unfinished deferred work. Refresh Today.');
+      await tx.todayTask.update({
+        where: { id: task.id },
+        data: {
+          status: 'COMPLETED',
+          completedAt: new Date(),
+          outcome: input.outcome,
+          deferralReason: task.deferralReason || task.outcome,
+        },
+      });
+      await tx.dailyPlan.update({
+        where: { id: task.planId },
+        data: { version: { increment: 1 } },
+      });
+      await tx.memory.create({
+        data: {
+          title: `Deferred prerequisite completed: ${task.title}`,
+          kind: 'OBSERVATION',
+          content: `Owner reports completion of task ${task.id}: ${input.outcome}. Earlier deferral reason: ${task.deferralReason || task.outcome}. Downstream work must still be planned and reviewed separately.`,
+          isDemo: task.plan.isDemo,
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          actor: actor.email,
+          action: 'DEFERRED_PREREQUISITE_COMPLETED',
+          entityType: 'TodayTask',
+          entityId: task.id,
+          details:
+            'Owner recorded observed completion; no downstream task or external action executed.',
+        },
+      });
+    });
+    return;
+  }
   if (body.action === 'generate') {
     const input = z
       .object({
@@ -152,6 +204,7 @@ export async function todayAction(
     });
     try {
       replacement = await generateReplacement(await getWorkspace(actor.id), {
+        taskId: task.id,
         title: task.title,
         reason: request.reason,
         maximumMinutes: Math.min(180, available),
@@ -162,6 +215,24 @@ export async function todayAction(
         'Could not prepare a replacement. Your current task is unchanged; retry in a minute.',
       );
     }
+  }
+  let reviewedPrerequisites: string[] | undefined;
+  if (body.action === 'task' && body.status === 'APPROVED') {
+    const task = await db.todayTask.findUnique({ where: { id: String(body.taskId) } });
+    if (!task) throw new TodayError('Task not found.');
+    const [checked] = await assessTaskReadiness(
+      [
+        {
+          title: task.title,
+          deliverable: task.deliverable,
+          prerequisiteTaskIds: Array.isArray(task.prerequisiteTaskIds)
+            ? task.prerequisiteTaskIds.filter((v): v is string => typeof v === 'string')
+            : [],
+        },
+      ],
+      await getWorkspace(actor.id),
+    );
+    reviewedPrerequisites = checked.prerequisiteTaskIds;
   }
   await db.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(74182360)`;
@@ -203,6 +274,8 @@ export async function todayAction(
         where: { id: task.id },
         data: {
           status: input.status,
+          ...(reviewedPrerequisites ? { prerequisiteTaskIds: reviewedPrerequisites } : {}),
+          ...(input.status === 'DEFERRED' ? { deferralReason: input.reason } : {}),
           ...(input.status === 'DEFERRED' ? { outcome: input.reason } : {}),
           ...(input.status === 'COMPLETED'
             ? {

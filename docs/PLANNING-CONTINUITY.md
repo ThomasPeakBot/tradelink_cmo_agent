@@ -1,0 +1,13 @@
+# Planning continuity and task readiness
+
+The CMO previously loaded only seven plans and omitted most task conversations from planning context. It now retrieves unfinished deferred work across all dates, completed prerequisite records and the signed-in owner’s historical user statements from both general chat and task chat. Relevant statements, recent statements and constraint-like statements are supplied as dated, attributed evidence. This is retrieval from saved records, not model retraining or a guarantee of perfect recall. Older saved institutional memories are no longer dropped by a newest-100 cutoff.
+
+Canonical current task statuses override old deferral memories. Unfinished deferred work stays unfinished until the owner records actual completion; time passing or a replacement being suggested never implies completion. Deferral reasons are preserved separately from the subsequent observed outcome. Existing tasks and outcomes are not reset.
+
+Daily planning and deferral replacements receive this continuity context. With OpenAI configured, candidates face an additional semantic prerequisite review when deferred work or owner-reported readiness constraints exist. It checks indirect dependencies even if the generator omits prerequisite IDs. Known prerequisite links are recorded; declared unfinished or unverified links cannot pass. A blocked daily proposal is regenerated once with the review feedback. No safe result means no new plan is persisted. Task approval rechecks readiness, including older proposals. Existing approved tasks and plans are not automatically rewritten.
+
+Without OpenAI, the app cannot infer novel semantic dependencies. While deferred work exists, local plans and replacement fallbacks use independent paper-only preparation rather than blindly choosing a high-ICE experiment. Chat, task guides and the idea lab also receive continuity evidence and instructions to distinguish hypothetical future work from ready execution.
+
+Today → Unfinished deferred work exposes the original reason across dates. Record prerequisite completion requires an observed outcome and explicitly marks that deferred task completed. It does not launch or approve downstream work. An unresolved condition should not be marked complete just because its blocker has cleared: do the underlying work first.
+
+Migration 202610220001_planning_continuity adds prerequisite IDs and a preserved deferral reason, backfilling existing DEFERRED outcomes. Startup applies it without resetting task records. Validation covers old deferrals outside the seven-plan window, old task-chat statements, semantic dependency rejection with omitted IDs, malformed readiness checks, safe replanning, explicit completion, persistence and browser workflow.

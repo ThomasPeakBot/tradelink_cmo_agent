@@ -100,4 +100,23 @@ test('Today guides a bounded workday, saves task outcomes and records a check-in
   });
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const deferredPanel = page
+    .locator('section.panel')
+    .filter({ has: page.getByRole('heading', { name: 'Unfinished deferred work', exact: true }) });
+  await deferredPanel.locator('summary').first().click();
+  await deferredPanel
+    .getByRole('button', { name: 'Record prerequisite completion', exact: true })
+    .click();
+  await expect(
+    deferredPanel.getByRole('button', { name: 'Record completed prerequisite', exact: true }),
+  ).toBeDisabled();
+  await deferredPanel
+    .getByLabel('What was completed, and what evidence confirms it?')
+    .fill('Creative assets and the deferred brief are now complete; owner reviewed them.');
+  await deferredPanel
+    .getByRole('button', { name: 'Record completed prerequisite', exact: true })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'Unfinished deferred work', exact: true }),
+  ).toHaveCount(0);
 });

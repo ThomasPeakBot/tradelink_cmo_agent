@@ -1,3 +1,4 @@
+import { TaskBlockedError } from '@/lib/task-readiness';
 import { ideaAction, IdeaError } from '@/lib/experiment-ideas';
 import { discussTask } from '@/lib/task-discussion';
 import { TodayGuideError } from '@/lib/today-guidance';
@@ -347,7 +348,8 @@ export async function POST(request: Request, { params }: Route) {
     if (
       error instanceof TodayError ||
       error instanceof TodayGuideError ||
-      error instanceof IdeaError
+      error instanceof IdeaError ||
+      error instanceof TaskBlockedError
     )
       return NextResponse.json({ error: error.message }, { status: 400 });
     if (error instanceof SyncBusyError)

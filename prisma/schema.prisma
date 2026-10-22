@@ -263,6 +263,8 @@ model TodayTask {
   rationale    String
   evidence     Json
   guide        Json?
+  prerequisiteTaskIds Json @default("[]")
+  deferralReason String @default("")
   status       String   @default("PROPOSED")
   outcome      String   @default("")
   actualMinutes Int?

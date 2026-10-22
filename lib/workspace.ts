@@ -1,3 +1,4 @@
+import { getOperatingContext } from './operating-context';
 import { affiliateEmailEvidence } from './affiliate-email/data';
 import { todayGuideSchema } from './today-guide';
 import { xAdsConfiguration, xAdsSnapshotSchema } from './x-ads';
@@ -33,7 +34,7 @@ export async function getWorkspace(userId: string) {
     }),
     db.experiment.findMany({ orderBy: { updatedAt: 'desc' } }),
     db.knowledge.findMany({ orderBy: { updatedAt: 'desc' } }),
-    db.memory.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
+    db.memory.findMany({ orderBy: { createdAt: 'desc' } }),
     db.approval.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
     db.auditLog.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
     db.alert.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
@@ -63,6 +64,7 @@ export async function getWorkspace(userId: string) {
       ? 'Stored read-only paid X reporting; check timestamps and scope before decisions.'
       : 'No paid X reporting has been synced. Organic X metrics are separate.',
   };
+  const operatingContext = await getOperatingContext(userId);
   const todayDate = easternSchedule().day;
   const plans = await db.dailyPlan.findMany({
     orderBy: { date: 'desc' },
@@ -94,6 +96,7 @@ export async function getWorkspace(userId: string) {
     warnings: z.array(z.string()).parse(p.warnings),
     tasks: p.tasks.map((t) => ({
       ...t,
+      prerequisiteTaskIds: z.array(z.string()).parse(t.prerequisiteTaskIds),
       discussion: discussions.get(t.id) ?? [],
       guide: t.guide ? todayGuideSchema.parse(t.guide) : null,
       evidence: z.array(z.string()).parse(t.evidence),
@@ -228,6 +231,7 @@ export async function getWorkspace(userId: string) {
     };
   });
   return {
+    operatingContext,
     company: goal,
     affiliateEmail,
     xAds,
