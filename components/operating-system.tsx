@@ -3,6 +3,7 @@ import { MarkdownText } from './markdown-text';
 import { AffiliateEmail } from './affiliate-email';
 import { Today } from './today';
 import { ExperimentIdeas } from './experiment-ideas';
+import { AgentHubExperiment } from './agent-hub-experiment';
 import { ThemeToggle } from './theme-toggle';
 import { useRouter } from 'next/navigation';
 import { hasDemoContext } from '@/lib/demo';
@@ -1297,6 +1298,7 @@ function Experiments({ data, mutate }: { data: Data; mutate: Mutate }) {
   const [editing, setEditing] = useState<string | null>(null);
   return (
     <>
+      <AgentHubExperiment />
       <ExperimentIdeas mutate={mutate} />
       <Panel
         title="Experiment backlog"
