@@ -4,7 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-from receiver import HubClient, HUB, evidence_review, tick, website_evidence
+from receiver import HubClient, HUB, evidence_review, tick, website_evidence, model_settings, model_review
+from unittest.mock import MagicMock
 
 class Client:
     actor = 'seo'
@@ -49,6 +50,36 @@ class ReceiverTests(unittest.TestCase):
             self.assertIn('not a free-form AI answer',result)
             self.assertIn('No task was assigned',result)
             self.assertLessEqual(len(result),8000)
+    def test_model_requires_explicit_enable_and_credentials(self):
+        with patch.dict(os.environ,{},clear=True):
+            self.assertIsNone(model_settings('seo'))
+        with patch.dict(os.environ,{'CSO_RESEARCH_PROVIDER':'anthropic'},clear=True):
+            with self.assertRaises(ValueError): model_settings('seo')
+        with patch.dict(os.environ,{'CSO_RESEARCH_PROVIDER':'anthropic','CSO_MODEL_ENABLED':'true','CSO_RESEARCH_MODEL':'test','ANTHROPIC_API_KEY':'test-key'},clear=True):
+            self.assertEqual(model_settings('seo')[0],'anthropic')
+            with self.assertRaises(ValueError):model_settings('tradelink-cmo')
+    def test_model_requests_are_toolless_and_bounded(self):
+        for actor,provider,result in [('tradelink-cmo','openai',{'choices':[{'message':{'content':'Review only'}}]}),('seo','anthropic',{'content':[{'type':'text','text':'Review only'}]})]:
+            opener=MagicMock()
+            opener.open.return_value.__enter__.return_value.read.return_value=json.dumps(result).encode()
+            with patch('receiver.urllib.request.build_opener',return_value=opener):
+                answer=model_review(actor,Client().detail,[],(provider,'test-key','test-model'))
+            request=opener.open.call_args.args[0]
+            packet=json.loads(request.data)
+            self.assertNotIn('tools',packet)
+            self.assertEqual(packet.get('max_tokens',packet.get('max_completion_tokens')),1200)
+            self.assertIn('QA MODEL REVIEW',answer)
+            self.assertNotIn('test-key',answer)
+    def test_model_claim_denial_never_calls_provider(self):
+        c=Client();original=c.request
+        def request(method,route,payload=None):
+            if route.endswith('/model-claim'):return {'granted':False,'reason':'daily_limit'}
+            return original(method,route,payload)
+        c.request=request
+        with patch('receiver.model_settings',return_value=('anthropic','test','model')),patch('receiver.model_review') as model:
+            tick(c)
+            model.assert_not_called()
+        self.assertIn('daily_limit',c.posts[0]['body'])
     def test_repository_html_observation(self):
         with tempfile.TemporaryDirectory() as d:
             Path(d,'index.html').write_text('<title>QA</title><h1>Heading</h1><meta name="description" content="Description">')
