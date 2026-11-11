@@ -13,6 +13,9 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 HUB = 'https://cso-hub-qa-isolatedqa.up.railway.app'
+# Fixed allowlist of isolated-QA Hub origins. The integrated QA Hub hosts CSO
+# cases alongside the original CSO QA service; nothing else is reachable.
+ALLOWED_HUBS = (HUB, 'https://hub-qa-isolatedqa.up.railway.app')
 BASE = '/api/v1/agent/cso/'
 MAX_BYTES = 2_000_000
 
@@ -28,8 +31,10 @@ class HubClient:
         self.token = os.environ['CSO_HUB_TOKEN']
         if self.actor not in ('seo', 'tradelink-cmo') or len(self.token) < 32:
             raise ValueError('Receiver identity is not configured')
-        if os.environ.get('CSO_HUB_ORIGIN') != HUB:
-            raise ValueError('Only the dedicated CSO QA Hub is allowed')
+        origin = os.environ.get('CSO_HUB_ORIGIN')
+        if origin not in ALLOWED_HUBS:
+            raise ValueError('Only an isolated QA Hub origin is allowed')
+        self.hub = origin
         self.opener = urllib.request.build_opener(RefuseRedirect())
 
     def request(self, method, route, payload=None):
@@ -40,7 +45,7 @@ class HubClient:
         if method not in ('GET', 'POST') or (method == 'POST' and route != 'heartbeat' and not route.endswith(('/messages','/model-claim'))):
             raise ValueError('Unsupported research action')
         data = json.dumps(payload).encode() if payload is not None else None
-        req = urllib.request.Request(HUB + BASE + route, data=data, method=method, headers={
+        req = urllib.request.Request(self.hub + BASE + route, data=data, method=method, headers={
             'Authorization': 'Bearer ' + self.token, 'X-Agent-Id': self.actor,
             'Content-Type': 'application/json'})
         with self.opener.open(req, timeout=25) as response:

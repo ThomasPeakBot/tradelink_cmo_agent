@@ -40,6 +40,11 @@ class ReceiverTests(unittest.TestCase):
             for route in ('../../tasks','proposals','discussions/https://evil.test','https://evil.test'):
                 with self.assertRaises(ValueError):c.request('POST',route,{})
             with self.assertRaises(ValueError):c.request('DELETE','discussions',{})
+    def test_integrated_qa_hub_origin_allowed(self):
+        with patch.dict(os.environ,{'CSO_ENVIRONMENT':'isolated_qa','CSO_AGENT_ID':'tradelink-cmo','CSO_HUB_TOKEN':'x'*40,'CSO_HUB_ORIGIN':'https://hub-qa-isolatedqa.up.railway.app'}):
+            self.assertEqual(HubClient().hub,'https://hub-qa-isolatedqa.up.railway.app')
+        with patch.dict(os.environ,{'CSO_ENVIRONMENT':'isolated_qa','CSO_AGENT_ID':'tradelink-cmo','CSO_HUB_TOKEN':'x'*40,'CSO_HUB_ORIGIN':'https://hub-qa-isolatedqa.up.railway.app.evil.test'}):
+            with self.assertRaises(ValueError):HubClient()
     def test_production_origin_refused(self):
         with patch.dict(os.environ,{'CSO_ENVIRONMENT':'isolated_qa','CSO_AGENT_ID':'seo','CSO_HUB_TOKEN':'x'*40,'CSO_HUB_ORIGIN':'https://production.example'}):
             with self.assertRaises(ValueError):HubClient()

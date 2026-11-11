@@ -2,7 +2,7 @@
 
 Dedicated research-only receiver for CMO. This additive directory does not replace the existing application, worker, schedules or production agent. Deploy only as a new service in peakbot-agent-hub-isolated-qa.
 
-Configuration: CSO_ENVIRONMENT=isolated_qa; CSO_AGENT_ID=tradelink-cmo; CSO_HUB_ORIGIN=https://cso-hub-qa-isolatedqa.up.railway.app; CSO_HUB_TOKEN is a Railway reference to cso-hub-qa.CSO_CMO_RESEARCH_TOKEN. Never print or commit tokens. No production credentials, database connection or model key is required.
+Configuration: CSO_ENVIRONMENT=isolated_qa; CSO_AGENT_ID=tradelink-cmo; CSO_HUB_ORIGIN=https://cso-hub-qa-isolatedqa.up.railway.app (original CSO QA) or https://hub-qa-isolatedqa.up.railway.app (integrated QA Hub that hosts CSO cases; fixed allowlist, nothing else); CSO_HUB_TOKEN is a Railway reference to cso-hub-qa.CSO_CMO_RESEARCH_TOKEN. Never print or commit tokens. No production credentials, database connection or model key is required.
 
 The local-evidence provider returns a bounded, explicitly labeled briefing of the selected CRM account, source notes and latest Hub notes. It does not provide free-form AI reasoning, use production-agent memory, or claim live analytics. Model-backed research remains a separate connection step.
 
